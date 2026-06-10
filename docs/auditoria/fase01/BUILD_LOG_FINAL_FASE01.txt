@@ -1,0 +1,39 @@
+
+> caderno-vivo@0.10.5 build
+> npm run check:app && node --check src/phase01-v35.js && node scripts/audit-phase-01-v35.mjs
+
+
+> caderno-vivo@0.10.5 check:app
+> node --check app.js
+
+FASE 01 V3.5 AUDIT PASS
+{
+  "requiredFiles": [
+    "index.html",
+    "styles.css",
+    "src/phase01-v35.js",
+    "src/routes/AppRoutes.jsx",
+    "src/components/HomePage.jsx",
+    "src/components/FloatingButton.jsx",
+    "src/components/ComposerDashboard.jsx",
+    "src/components/ComposerHome.jsx",
+    "src/components/BeginnerMode.jsx",
+    "src/components/ComposerMode.jsx",
+    "src/components/ProfessionalMode.jsx"
+  ],
+  "checks": [
+    "phase script loaded",
+    "Home principal",
+    "Caderno do Compositor",
+    "Criar Música",
+    "Minhas Obras",
+    "Maestro IA",
+    "Profissional",
+    "Botão flutuante +",
+    "Perfil Iniciante",
+    "Perfil Compositor",
+    "Perfil Profissional",
+    "Navegação por rotas",
+    "CSS Fase 01"
+  ]
+}

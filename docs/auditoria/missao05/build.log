@@ -1,0 +1,69 @@
+
+> caderno-vivo@0.10.5 build
+> npm run check:app && node --check src/phase01-v35.js && node --check src/mission02-notebook.js && node --check src/mission03-works.js && node --check src/mission04-maestro.js && node --check src/mission05-professional.js && node scripts/audit-phase-01-v35.mjs && node scripts/audit-mission-02-composer-notebook.mjs && node scripts/audit-mission-03-works-catalog.mjs && node scripts/audit-mission-04-maestro-ia.mjs && node scripts/audit-mission-05-professional.mjs
+
+
+> caderno-vivo@0.10.5 check:app
+> node --check app.js
+
+FASE 01 V3.5 AUDIT PASS
+{
+  "requiredFiles": [
+    "index.html",
+    "styles.css",
+    "src/phase01-v35.js",
+    "src/routes/AppRoutes.jsx",
+    "src/components/HomePage.jsx",
+    "src/components/FloatingButton.jsx",
+    "src/components/ComposerDashboard.jsx",
+    "src/components/ComposerHome.jsx",
+    "src/components/BeginnerMode.jsx",
+    "src/components/ComposerMode.jsx",
+    "src/components/ProfessionalMode.jsx"
+  ],
+  "checks": [
+    "phase script loaded",
+    "Home principal",
+    "Caderno do Compositor",
+    "Criar Música",
+    "Minhas Obras",
+    "Maestro IA",
+    "Profissional",
+    "Botão flutuante +",
+    "Perfil Iniciante",
+    "Perfil Compositor",
+    "Perfil Profissional",
+    "Navegação por rotas",
+    "CSS Fase 01"
+  ]
+}
+MISSÃO 02 CADERNO DO COMPOSITOR AUDIT PASS
+{
+  "requiredFiles": [
+    "src/mission02-notebook.js",
+    "src/components/ComposerNotebook.jsx",
+    "src/components/LyricsManager.jsx",
+    "src/components/IdeasManager.jsx",
+    "src/components/AudioManager.jsx",
+    "src/components/DraftManager.jsx",
+    "src/components/VersionManager.jsx"
+  ],
+  "checks": [
+    "mission script loaded",
+    "caderno route binds notebook",
+    "ComposerNotebook global",
+    "Letras",
+    "Ideias",
+    "Áudios",
+    "Rascunhos",
+    "Histórico",
+    "Biblioteca",
+    "Versionamento",
+    "localStorage persistence",
+    "export memory",
+    "CSS mission02"
+  ]
+}
+mission03 works catalog audit passed
+mission04 maestro ia audit passed
+mission05 professional audit passed

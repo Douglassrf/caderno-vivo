@@ -84,8 +84,8 @@ Configurar secrets das functions:
 supabase secrets set \
   SUPABASE_URL="$SUPABASE_URL" \
   SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-  SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-  MERCADO_PAGO_ACCESS_TOKEN="$MERCADO_PAGO_ACCESS_TOKEN" \
+  SUPABASE_SERVICE_ROLE_KEY=<definir_no_ambiente_server_side> \
+  MERCADO_PAGO_ACCESS_TOKEN=<definir_no_ambiente_server_side> \
   APP_ORIGIN="$APP_ORIGIN" \
   EXPORT_BUCKET="$EXPORT_BUCKET"
 ```

@@ -1,4 +1,8 @@
-﻿node_modules
-.next
+node_modules/
 .env
-dist
+.env.*
+!.env.supabase.example
+.DS_Store
+.server.pid
+tmp-chrome-audit-profile/
+

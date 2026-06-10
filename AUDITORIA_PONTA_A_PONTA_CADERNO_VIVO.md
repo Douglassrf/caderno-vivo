@@ -70,7 +70,7 @@ Adicionada validação HMAC SHA-256 com:
 - x-signature
 - x-request-id
 - data.id
-- MERCADO_PAGO_WEBHOOK_SECRET
+- MERCADO_PAGO_WEBHOOK_SECRET <server-side-only>
 ```
 
 Arquivo corrigido:
@@ -84,13 +84,13 @@ supabase/functions/mercado-pago-webhook/index.ts
 Problema:
 
 ```txt
-O audit-deploy-readiness exigia MERCADO_PAGO_WEBHOOK_SECRET, mas .env.supabase.example não documentava essa variável.
+O audit-deploy-readiness exigia MERCADO_PAGO_WEBHOOK_SECRET <server-side-only>
 ```
 
 Correção aplicada:
 
 ```txt
-Adicionado MERCADO_PAGO_WEBHOOK_SECRET=assinatura_secreta_do_webhook
+Adicionado MERCADO_PAGO_WEBHOOK_SECRET <server-side-only>
 ```
 
 Arquivo corrigido:

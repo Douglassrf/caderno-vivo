@@ -27,7 +27,18 @@
     "check:missoes123": "node --check src/profileService.js && node --check scripts/audit-missoes-1-2-3-atualizadas.mjs && npm run audit:missoes123",
     "check:missions21to50": "node --check src/missionServicesIndex.js && node scripts/audit-missions-21-50.mjs",
     "check:logical-integration": "node --check src/logicalMissionController.js && node scripts/audit-logical-integration.mjs",
-    "check:final-closure": "node --check src/finalClosureController.js && node scripts/audit-final-closure.mjs"
+    "check:final-closure": "node --check src/finalClosureController.js && node scripts/audit-final-closure.mjs",
+    "build": "npm run check:app && node --check src/phase01-v35.js && node --check src/mission02-notebook.js && node --check src/mission03-works.js && node --check src/mission04-maestro.js && node --check src/mission05-professional.js && node scripts/audit-phase-01-v35.mjs && node scripts/audit-mission-02-composer-notebook.mjs && node scripts/audit-mission-03-works-catalog.mjs && node scripts/audit-mission-04-maestro-ia.mjs && node scripts/audit-mission-05-professional.mjs && node --check src/mission06-artist-journey.js && node --check src/mission07-evolution-panel.js && node --check src/mission08-real-achievements.js && node scripts/audit-mission-06-artist-journey.mjs && node scripts/audit-mission-07-evolution-panel.mjs && node scripts/audit-mission-08-real-achievements.mjs && node scripts/audit-final-v35.mjs && node scripts/audit-e2e-v35.mjs && node scripts/audit-security-v35.mjs",
+    "audit:mission02": "node scripts/audit-mission-02-composer-notebook.mjs",
+    "audit:mission03": "node scripts/audit-mission-03-works-catalog.mjs",
+    "audit:mission04": "node scripts/audit-mission-04-maestro-ia.mjs",
+    "audit:mission05": "node scripts/audit-mission-05-professional.mjs",
+    "audit:mission06": "node scripts/audit-mission-06-artist-journey.mjs",
+    "audit:mission07": "node scripts/audit-mission-07-evolution-panel.mjs",
+    "audit:mission08": "node scripts/audit-mission-08-real-achievements.mjs",
+    "audit:final:v35": "node scripts/audit-final-v35.mjs",
+    "audit:e2e:v35": "node scripts/audit-e2e-v35.mjs",
+    "audit:security:v35": "node scripts/audit-security-v35.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.44.4"
