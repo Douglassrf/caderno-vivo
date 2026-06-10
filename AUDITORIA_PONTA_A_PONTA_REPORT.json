@@ -1,0 +1,491 @@
+{
+  "generatedAt": "2026-06-05T12:01:01.978Z",
+  "summary": {
+    "total": 94,
+    "passed": 92,
+    "failed": 2
+  },
+  "verdict": "STRUCTURE_OK_REAL_GATES_PENDING",
+  "checks": [
+    {
+      "name": "file:index.html",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:app.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:styles.css",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:package.json",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:.env.supabase.example",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/authService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/storageAdapter.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/supabaseClient.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/entitlementService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/paymentService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/exportProtectionService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/deployReadinessService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:src/commercialLaunchService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:supabase/migrations/001_poc_anti_idor.sql",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:supabase/migrations/002_product_security_foundation.sql",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:supabase/migrations/003_private_exports_storage.sql",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:supabase/functions/secure-dossier/index.ts",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:supabase/functions/mercado-pago-webhook/index.ts",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:supabase/functions/create-signed-export-url/index.ts",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:scripts/test-supabase-idor.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:scripts/test-supabase-product-security.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:scripts/audit-security-artifacts.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:scripts/audit-deploy-readiness.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:scripts/audit-commercial-launch.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:docs/missoes/MISSAO_10_LANCAMENTO_COMERCIAL.md",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "file:memoria/MEMORIA_FINAL_CADERNO_VIVO.md",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:app.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/academyService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/adminDashboardService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/aiComposerService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/analyticsService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/authService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/backupService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/collaborationService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/commercialLaunchService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/creativeLibraryService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/crmService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/deployReadinessService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/distributionService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/ecosystemService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/enterpriseService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/entitlementService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/exportProtectionService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/finalClosureController.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/globalizationService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/harmonyAiService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/insightsService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/launchAiService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/licensingService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/logicalMissionController.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/lyricsAiService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/marketplaceService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/mentorService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/missionServicesIndex.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/mobileReadinessService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/monitoringService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/paymentService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/productionAiService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/profileService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/referralService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/retentionService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/rightsService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/storageAdapter.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/supabaseClient.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/syncService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/teamService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/versionService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:src/workspaceService.js",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-commercial-launch.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-deploy-readiness.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-final-closure.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-logical-integration.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-missions-21-50.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-missoes-1-2-3-atualizadas.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-ponta-a-ponta.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/audit-security-artifacts.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/mock-supabase-security-server.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/run-security-tests-local-mock.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/test-supabase-idor.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "syntax:scripts/test-supabase-product-security.mjs",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "dom:seletores_js_existentes_no_html",
+      "ok": true,
+      "details": "157 seletores validados"
+    },
+    {
+      "name": "env-example:SUPABASE_URL",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "env-example:SUPABASE_ANON_KEY",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "env-example:SUPABASE_SERVICE_ROLE_KEY",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "env-example:EXPORT_BUCKET",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "env-example:MERCADO_PAGO_ACCESS_TOKEN",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "env-example:MERCADO_PAGO_WEBHOOK_SECRET",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "security:webhook_assinatura_mercado_pago",
+      "ok": true,
+      "details": "valida x-signature/x-request-id antes de consultar pagamento"
+    },
+    {
+      "name": "scripts:mock_cross_platform",
+      "ok": true,
+      "details": "script Node criado para Linux/macOS/Windows além do PowerShell"
+    },
+    {
+      "name": "zip:caderno-vivo-fase-9-mp4-ffmpeg-auditado.zip",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "zip:caderno-vivo-internacionalizacao-plus-prime-auditado.zip",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "zip:caderno-vivo-politica-comercial-juridica-auditado.zip",
+      "ok": true,
+      "details": "ok"
+    },
+    {
+      "name": "gate:deploy_env_real",
+      "ok": false,
+      "details": "variaveis reais ausentes neste ambiente"
+    },
+    {
+      "name": "gate:supabase_security_env_real",
+      "ok": false,
+      "details": "usuarios/variaveis reais ausentes neste ambiente"
+    }
+  ],
+  "blockingNotes": [
+    {
+      "name": "gate:deploy_env_real",
+      "details": "variaveis reais ausentes neste ambiente"
+    },
+    {
+      "name": "gate:supabase_security_env_real",
+      "details": "usuarios/variaveis reais ausentes neste ambiente"
+    }
+  ]
+}

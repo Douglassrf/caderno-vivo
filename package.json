@@ -1,0 +1,38 @@
+{
+  "name": "caderno-vivo",
+  "version": "0.10.5",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "supabase:start": "supabase start",
+    "supabase:status": "supabase status",
+    "supabase:link": "supabase link --project-ref \"$SUPABASE_PROJECT_REF\"",
+    "supabase:db:push": "supabase db push",
+    "supabase:db:reset": "supabase db reset",
+    "supabase:functions:deploy": "supabase functions deploy",
+    "preflight:stage1": "powershell -ExecutionPolicy Bypass -File ./scripts/preflight-stage1.ps1",
+    "audit:security-artifacts": "node scripts/audit-security-artifacts.mjs",
+    "test:security:mock": "powershell -ExecutionPolicy Bypass -File ./scripts/run-security-tests-local-mock.ps1",
+    "test:supabase:idor": "node scripts/test-supabase-idor.mjs",
+    "test:supabase:product-security": "node scripts/test-supabase-product-security.mjs",
+    "test:security": "npm run test:supabase:idor && npm run test:supabase:product-security",
+    "check:app": "node --check app.js",
+    "audit:deploy-readiness": "node scripts/audit-deploy-readiness.mjs",
+    "check:block3": "node --check src/exportProtectionService.js && node --check src/deployReadinessService.js && node --check scripts/audit-deploy-readiness.mjs",
+    "audit:commercial-launch": "node scripts/audit-commercial-launch.mjs",
+    "check:final": "node --check src/commercialLaunchService.js && node --check scripts/audit-commercial-launch.mjs",
+    "test:security:mock:node": "node scripts/run-security-tests-local-mock.mjs",
+    "audit:e2e": "node scripts/audit-ponta-a-ponta.mjs",
+    "audit:missoes123": "node scripts/audit-missoes-1-2-3-atualizadas.mjs",
+    "check:missoes123": "node --check src/profileService.js && node --check scripts/audit-missoes-1-2-3-atualizadas.mjs && npm run audit:missoes123",
+    "check:missions21to50": "node --check src/missionServicesIndex.js && node scripts/audit-missions-21-50.mjs",
+    "check:logical-integration": "node --check src/logicalMissionController.js && node scripts/audit-logical-integration.mjs",
+    "check:final-closure": "node --check src/finalClosureController.js && node scripts/audit-final-closure.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.44.4"
+  },
+  "devDependencies": {
+    "supabase": "latest"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "status": "PASSED",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "checks": [
+    {
+      "path": "src/supabaseClient.js",
+      "ok": true
+    },
+    {
+      "path": "src/authService.js",
+      "ok": true
+    },
+    {
+      "path": "src/storageAdapter.js",
+      "ok": true
+    },
+    {
+      "path": "src/profileService.js",
+      "ok": true
+    },
+    {
+      "path": "supabase/migrations/004_user_assets_and_profiles.sql",
+      "ok": true
+    },
+    {
+      "path": "docs/missoes/MISSAO_01_FUNDACAO_SUPABASE_PREPARADA_ATUALIZADA.md",
+      "ok": true
+    },
+    {
+      "path": "docs/missoes/MISSAO_02_AUTENTICACAO_REAL_PREPARADA_ATUALIZADA.md",
+      "ok": true
+    },
+    {
+      "path": "docs/missoes/MISSAO_03_PERFIL_SESSAO_PREPARADA_ATUALIZADA.md",
+      "ok": true
+    },
+    {
+      "path": "memoria/MEMORIA_MISSOES_01_02_03_ATUALIZADA.md",
+      "ok": true
+    },
+    {
+      "path": "memoria/MEMORIA_MISSOES_04_05_06_PREPARADA_ATUALIZADA.md",
+      "ok": true
+    }
+  ]
+}
