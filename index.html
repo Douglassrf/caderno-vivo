@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
   <title>Caderno Vivo</title>
   <link rel="stylesheet" href="styles.css?v=20260603-secure">
 </head>
@@ -41,7 +41,68 @@
             <section class="subpanel revive-panel"><div class="subpanel-heading row"><div><h3>Nao deixa morrer</h3><p id="reviveText">Selecione uma obra.</p></div><button id="reviveButton" class="ghost-button" type="button">Sugerir acao</button></div></section>
             <label class="field full"><span>Letra e anotacoes</span><textarea id="lyricsInput" rows="12" placeholder="Escreva versos, ideias, rimas e observacoes..."></textarea></label>
             <div class="editor-actions-row"><button id="saveVersionButton" class="primary-action compact" type="button">Salvar versao da letra</button><button id="exportWorkButton" class="ghost-button" type="button">Exportar obra</button></div>
-            <section class="subpanel mentor-panel"><div class="subpanel-heading row"><div><h3>Mentor Criativo</h3><p>Ajuda a completar, criar do zero e revisar metrica sem apagar a identidade da obra.</p></div><button id="applyMentorButton" class="primary-action compact" type="button">Aplicar sugestao</button></div><div class="form-grid compact-grid"><label class="field"><span>Modo</span><select id="mentorModeInput"><option value="complete">Completar trecho</option><option value="new">Criar letra guiada</option><option value="improve">Melhorar refrão/estrofe</option><option value="metric">Analisar metrica</option></select></label><label class="field"><span>Parte</span><select id="mentorSectionInput"><option>refrão</option><option>verso</option><option>ponte</option><option>estrofe</option></select></label><label class="field"><span>Intencao</span><input id="mentorIntentInput" type="text" placeholder="Ex: superacao com linguagem simples"></label><button id="generateMentorButton" class="ghost-button field-button" type="button">Gerar sugestao</button></div><pre id="mentorOutput" class="mentor-output">Escolha um modo e gere uma sugestao.</pre><div id="mentorHistoryList" class="mentor-history"></div></section><section class="subpanel international-panel"><div class="subpanel-heading row"><div><h3>Adaptacao Internacional</h3><p>Versoes cantaveis para qualquer idioma e mercado, preservando sentido, emocao, metrica e rima.</p></div><div class="badge-row"><button id="generateInternationalButton" class="primary-action compact" type="button">Gerar adaptacao</button><button id="saveInternationalButton" class="ghost-button" type="button">Salvar versao</button><button id="plusOfferButton" class="ghost-button" type="button">Plano Plus</button></div></div><div id="plusOfferBox" class="offer-box"><strong>Voce ja imaginou sua musica tocando em outro pais, em outro idioma?</strong><p>Adquira o Plus para adaptar sua musica para ingles, espanhol ou qualquer idioma do mundo sem perder emocao, metrica e rima.</p></div><div class="form-grid international-grid"><label class="field"><span>Origem</span><select id="sourceLanguageInput"><option>portugues do Brasil</option><option>ingles</option><option>espanhol</option><option>frances</option><option>italiano</option><option>alemao</option><option>japones</option><option>coreano</option><option>arabe</option><option>hindi</option><option>mandarim</option><option>russo</option></select></label><label class="field"><span>Destino</span><select id="targetLanguageInput"><option>ingles</option><option>espanhol</option><option>frances</option><option>italiano</option><option>alemao</option><option>portugues do Brasil</option><option>japones</option><option>coreano</option><option>arabe</option><option>hindi</option><option>mandarim</option><option>russo</option><option>outro</option></select></label><label class="field"><span>Mercado</span><input id="targetMarketInput" type="text" placeholder="Ex: Estados Unidos, Mexico, Japao"></label><label class="field"><span>Modo</span><select id="adaptationModeInput"><option value="singable">Cantavel</option><option value="faithful">Fiel ao sentido</option><option value="rhyme">Com rima</option><option value="emotional">Emocional</option><option value="commercial">Comercial/hit</option></select></label></div><div id="internationalScore" class="score-grid"></div><pre id="internationalOutput" class="mentor-output">Escolha idioma, mercado e modo para gerar uma versao internacional.</pre><label class="field full review-field"><span>Revisao humana da versao internacional</span><textarea id="internationalReviewInput" rows="5" placeholder="Revise contexto cultural, expressoes locais e ajustes de sentido antes de gerar o clipe internacional."></textarea></label><div id="internationalVersionsList" class="version-list"></div></section>
+            <section class="subpanel mentor-panel"><div class="subpanel-heading row"><div><h3>Mentor Criativo</h3><p>Ajuda a completar, criar do zero e revisar metrica sem apagar a identidade da obra.</p></div><button id="applyMentorButton" class="primary-action compact" type="button">Aplicar sugestao</button></div><div class="form-grid compact-grid"><label class="field"><span>Modo</span><select id="mentorModeInput"><option value="complete">Completar trecho</option><option value="new">Criar letra guiada</option><option value="improve">Melhorar refrão/estrofe</option><option value="metric">Analisar metrica</option></select></label><label class="field"><span>Parte</span><select id="mentorSectionInput"><option>refrão</option><option>verso</option><option>ponte</option><option>estrofe</option></select></label><label class="field"><span>Intencao</span><input id="mentorIntentInput" type="text" placeholder="Ex: superacao com linguagem simples"></label><button id="generateMentorButton" class="ghost-button field-button" type="button">Gerar sugestao</button></div><pre id="mentorOutput" class="mentor-output">Escolha um modo e gere uma sugestao.</pre><div id="mentorHistoryList" class="mentor-history"></div></section><section class="subpanel international-panel"><div class="subpanel-heading row"><div><h3>Adaptacao Internacional</h3><p>Versoes cantaveis para qualquer idioma e mercado, preservando sentido, emocao, metrica e rima.</p></div><div class="badge-row"><button id="generateInternationalButton" class="primary-action compact" type="button">Gerar adaptacao</button><button id="saveInternationalButton" class="ghost-button" type="button">Salvar versao</button><button id="plusOfferButton" class="ghost-button" type="button">Plano Plus</button></div></div><div id="plusOfferBox" class="offer-box"><strong>Voce ja imaginou sua musica tocando em outro pais, em outro idioma?</strong><p>Adquira o Plus para adaptar sua musica para ingles, espanhol ou qualquer idioma do mundo sem perder emocao, metrica e rima.</p></div><div class="form-grid international-grid"><label class="field"><span>Origem</span><select id="sourceLanguageInput">
+<option>portugues do Brasil</option><option>ingles</option><option>espanhol</option>
+<option>frances</option><option>italiano</option><option>alemao</option>
+<option>japones</option><option>coreano</option><option>arabe</option>
+<option>hindi</option><option>mandarim</option><option>russo</option>
+<option>turco</option><option>holandes</option><option>polones</option>
+<option>sueco</option><option>grego</option><option>hebraico</option>
+<option>thai</option><option>vietnamita</option><option>indonesio</option>
+<option>swahili</option><option>yoruba</option><option>amharico</option>
+</select></label><label class="field"><span>Destino</span><select id="targetLanguageInput">
+<optgroup label="── América ──">
+<option>ingles</option><option>espanhol</option><option>portugues do Brasil</option>
+<option>frances canadense</option><option>creole haitiano</option><option>guarani</option>
+<option>quechua</option>
+</optgroup>
+<optgroup label="── Europa ──">
+<option>frances</option><option>alemao</option><option>italiano</option>
+<option>portugues europeu</option><option>espanhol espanha</option>
+<option>holandes</option><option>sueco</option><option>noruegues</option>
+<option>dinamarques</option><option>finlandes</option><option>polones</option>
+<option>tcheco</option><option>eslovaco</option><option>hungaro</option>
+<option>romeno</option><option>bulgaro</option><option>croata</option>
+<option>sérvio</option><option>bósnio</option><option>esloveno</option>
+<option>macedônio</option><option>albanês</option><option>grego</option>
+<option>ucraniano</option><option>russo</option><option>bielorrusso</option>
+<option>lituano</option><option>letão</option><option>estônio</option>
+<option>catalão</option><option>galego</option><option>basco</option>
+<option>islandês</option><option>irlandês</option><option>galês</option>
+<option>maltês</option>
+</optgroup>
+<optgroup label="── Ásia ──">
+<option>mandarim</option><option>japones</option><option>coreano</option>
+<option>hindi</option><option>bengali</option><option>urdu</option>
+<option>punjabi</option><option>marathi</option><option>telugu</option>
+<option>tamil</option><option>gujarati</option><option>nepalês</option>
+<option>cingales</option><option>birmanes</option><option>thai</option>
+<option>vietnamita</option><option>khmer</option><option>laociano</option>
+<option>indonesio</option><option>malaio</option><option>tagalog</option>
+<option>mongol</option><option>tibetano</option><option>cazaque</option>
+<option>uzbeko</option><option>azerbaijano</option>
+<option>georgiano</option><option>armênio</option>
+<option>persa</option><option>pashto</option><option>dari</option>
+<option>turco</option>
+</optgroup>
+<optgroup label="── Oriente Médio ──">
+<option>arabe</option><option>hebraico</option><option>aramaico</option>
+<option>curdo</option>
+</optgroup>
+<optgroup label="── África ──">
+<option>swahili</option><option>haussa</option><option>yoruba</option>
+<option>amharico</option><option>igbo</option><option>zulu</option>
+<option>xhosa</option><option>shona</option><option>somali</option>
+<option>wolof</option><option>bambara</option><option>luganda</option>
+<option>kinyarwanda</option><option>lingala</option><option>afrikaans</option>
+<option>malgaxe</option>
+</optgroup>
+<optgroup label="── Oceania ──">
+<option>maori</option><option>samoano</option><option>tonganês</option>
+<option>havaiano</option><option>fijiano</option>
+</optgroup>
+<option>outro</option>
+</select></label><label class="field"><span>Mercado</span><input id="targetMarketInput" type="text" placeholder="Ex: Estados Unidos, Mexico, Japao"></label><label class="field"><span>Modo</span><select id="adaptationModeInput"><option value="singable">Cantavel</option><option value="faithful">Fiel ao sentido</option><option value="rhyme">Com rima</option><option value="emotional">Emocional</option><option value="commercial">Comercial/hit</option></select></label></div><div id="internationalScore" class="score-grid"></div><pre id="internationalOutput" class="mentor-output">Escolha idioma, mercado e modo para gerar uma versao internacional.</pre><label class="field full review-field"><span>Revisao humana da versao internacional</span><textarea id="internationalReviewInput" rows="5" placeholder="Revise contexto cultural, expressoes locais e ajustes de sentido antes de gerar o clipe internacional."></textarea></label><div id="internationalVersionsList" class="version-list"></div></section>
             <div class="split-editor"><section class="subpanel"><div class="subpanel-heading"><h3>Cifra</h3></div><textarea id="chordsInput" rows="7" placeholder="Am - F - C - G"></textarea></section><section class="subpanel"><div class="subpanel-heading"><h3>Referencias</h3></div><textarea id="referencesInput" rows="7" placeholder="Links, artistas, temas..."></textarea></section></div>
             <section class="subpanel"><div class="subpanel-heading row"><div><h3>Audios e instrumental leve</h3><p>Catalogacao local para voz, guia, instrumental, demo ou referencia.</p></div></div><div class="audio-entry"><select id="audioTypeInput"><option>voz</option><option>guia</option><option>instrumental</option><option>demo</option><option>referencia</option></select><input id="audioNameInput" type="text" placeholder="Nome do audio"><input id="audioLinkInput" type="url" placeholder="Link opcional"><input id="audioFileInput" type="file" accept="audio/*"><button id="addAudioButton" class="ghost-button" type="button">Adicionar</button></div><div id="audioList" class="chip-list"></div></section>
             <section class="subpanel"><div class="subpanel-heading row"><div><h3>Blocos de composicao</h3><p>Estrutura textual da musica.</p></div><button id="addBlockButton" class="ghost-button" type="button">+ Bloco</button></div><div id="blocksList" class="blocks-list"></div></section>
@@ -60,7 +121,19 @@
   </div>
   <script src="app.js?v=20260603-secure"></script>
   
-<script src="mascote-caderno-vivo.js"></script>
-<script src="ministerio-cantado.js"></script>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <script src="mascote-caderno-vivo.js"></script>
+  <script src="ministerio-cantado.js"></script>
+  <script src="estudio-musical.js"></script>
 </body>
 </html>
+
