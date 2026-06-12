@@ -249,17 +249,23 @@ REGRAS ABSOLUTAS:
 - Responda APENAS o roteiro, sem introdução ou explicação`;
 
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const key = (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY && !GEMINI_API_KEY.includes('Demo')) ? GEMINI_API_KEY : null;
+      if (!key) {
+        if (output) output.innerHTML = '<div class="mc-erro">⚙️ Configure a chave Gemini gratuita em aistudio.google.com/app/apikey para usar o Maestro de IA.</div>';
+        if (btnGerar) { btnGerar.disabled = false; btnGerar.textContent = '✨ Estruturar Ministração'; }
+        return;
+      }
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+      const resp = await fetch(geminiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
         }),
       });
       const data = await resp.json();
-      const texto = data.content?.find(b => b.type === 'text')?.text || '';
+      const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       ministerioGerado = {
         id: uid(),
