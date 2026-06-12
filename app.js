@@ -59,6 +59,251 @@ function markClipAction(){const w=getActiveWork();if(!w)return;const action=w.cl
 function generateClipPlan(){const w=getActiveWork();if(!w)return;const concept=w.clip.concept.trim()||w.title;const style=w.clip.style.trim()||"cinematografico realista";const palette=w.clip.palette.trim()||"tons naturais com acento cobre";const mood=w.clip.mood.trim()||w.mood||"emocional";const location=w.clip.location.trim()||"locacao coerente com a letra";const persona=w.clip.persona.trim()||"protagonista da cancao";const source=w.blocks.filter(b=>b.notes.trim()).map(b=>({part:b.name,text:b.notes}));if(!source.length){const lines=w.lyrics.split("\n").map(l=>l.trim()).filter(Boolean);if(lines.length)lines.slice(0,6).forEach((line,i)=>source.push({part:i===0?"Intro":i%3===0?"Refrao":"Verso",text:line}))}if(!source.length){source.push({part:"Intro",text:"Apresentar o universo visual da musica"},{part:"Verso",text:"Mostrar o conflito emocional da letra"},{part:"Refrao",text:"Elevar a imagem principal da cancao"},{part:"Final",text:"Encerrar com uma imagem memoravel"})}w.clip.scenes=source.slice(0,10).map((s,i)=>{const emotion=i===0?mood:i===source.length-1?"resolucao emocional":mood;const scene={id:createId(),part:s.part||`Cena ${i+1}`,duration:i===0?"5s":"6s",shot:i%3===0?"plano geral com movimento lento":i%3===1?"plano medio cinematografico":"close expressivo",status:"planejada",prompt:clipPrompt({title:w.title,concept,style,palette,mood:emotion,location,persona,part:s.part,text:s.text}),imagePrompt:"",storyboard:"",takeUrl:"",assetNotes:""};scene.imagePrompt=imagePromptForScene(w,scene,s.text);return scene});w.clip.coverPrompt=w.clip.coverPrompt||imagePromptForCover(w);w.clip.checklist["Conceito visual aprovado"]=Boolean(w.clip.concept.trim());w.clip.checklist["Roteiro por cenas iniciado"]=true;w.clip.checklist["Prompts revisados"]=false;w.clip.nextAction=w.clip.nextAction||"Revisar prompts e escolher o primeiro take para gerar";touchWork(w,"Roteiro de videoclipe gerado");render()}
 function clipPrompt({title,concept,style,palette,mood,location,persona,part,text}){return`Videoclipe da musica "${title}". Parte: ${part}. Conceito: ${concept}. Cena inspirada em: ${text}. ${style}, imagem altamente realista, direcao de fotografia cinematografica, luz natural controlada, textura premium, camera suave, ${location}, personagem: ${persona}, emocao: ${mood}, paleta: ${palette}. Evitar texto na imagem, logos e imitacao de artistas reais.`}
 function imagePromptForScene(w,scene,text){return`Frame de storyboard para "${w.title}". ${scene.part}: ${text||scene.prompt}. ${w.clip.style||"cinematografico realista"}, ${w.clip.location||"locacao coerente com a letra"}, personagem: ${w.clip.persona||"protagonista"}, paleta ${w.clip.palette||"tons naturais"}, composicao cinematografica, alta definicao, sem texto, sem logos.`}
+
+/* ════════════════════════════════════════════════════════════════
+   GERADOR DE IMAGEM — Caderno Vivo
+   Motor: Pollinations.ai (100% gratuito, sem chave, sem cadastro)
+   Fallback: Hugging Face SDXL-Turbo (gratuito com cota)
+   
+   Limites por plano (localStorage):
+   - Gratuito:    3 imagens/mês
+   - Compositor:  20 imagens/mês
+   - Artista:     100 imagens/mês
+   - Profissional: ilimitado
+════════════════════════════════════════════════════════════════ */
+
+const IMG_LIMITES = {
+  free:         3,
+  compositor:   20,
+  artista:      100,
+  profissional: Infinity,
+};
+const IMG_STORAGE_KEY = 'cv-img-uso-';
+
+function getPlanoAtual() {
+  // Lê o plano do localStorage (integrado com sistema comercial existente)
+  try {
+    const raw = localStorage.getItem('caderno-vivo-state-v5');
+    if (!raw) return 'free';
+    const st = JSON.parse(raw);
+    const plano = st.commercial?.activePlan || 'free';
+    return ['compositor','artista','profissional'].includes(plano) ? plano : 'free';
+  } catch { return 'free'; }
+}
+
+function getMesAtual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}`;
+}
+
+function getUsoImagens() {
+  const key = IMG_STORAGE_KEY + getMesAtual();
+  return parseInt(localStorage.getItem(key) || '0');
+}
+
+function incrementarUsoImagens() {
+  const key = IMG_STORAGE_KEY + getMesAtual();
+  localStorage.setItem(key, String(getUsoImagens() + 1));
+}
+
+function verificarLimiteImagem() {
+  const plano = getPlanoAtual();
+  const limite = IMG_LIMITES[plano] || IMG_LIMITES.free;
+  const uso = getUsoImagens();
+  return { ok: uso < limite, uso, limite, plano };
+}
+
+function urlPollinationsAi(prompt, width, height, seed) {
+  const encoded = encodeURIComponent(prompt);
+  const w = width  || 1024;
+  const h = height || 1024;
+  const s = seed   || Math.floor(Math.random() * 99999);
+  return `https://image.pollinations.ai/prompt/${encoded}?width=${w}&height=${h}&seed=${s}&nologo=true&model=flux`;
+}
+
+async function gerarImagemPollinationsAi(prompt, width, height) {
+  const url = urlPollinationsAi(prompt, width, height);
+  // Pollinations funciona como <img src> — não precisa de fetch
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timeout = setTimeout(() => reject(new Error('Timeout')), 30000);
+    img.onload = () => { clearTimeout(timeout); resolve({ url, img }); };
+    img.onerror = () => { clearTimeout(timeout); reject(new Error('Falha no carregamento')); };
+    img.src = url;
+  });
+}
+
+async function gerarImagemHuggingFace(prompt) {
+  // Fallback: Hugging Face Inference API (grátis com cota)
+  const resp = await fetch(
+    'https://api-inference.huggingface.co/models/stabilityai/sdxl-turbo',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: prompt }),
+    }
+  );
+  if (!resp.ok) throw new Error(`HF error ${resp.status}`);
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}
+
+async function gerarImagem(prompt, opcoes = {}) {
+  const { width = 1024, height = 1024, elementoDestino, callbackStatus, callbackOk, callbackErro } = opcoes;
+
+  // Verificar limite do plano
+  const limite = verificarLimiteImagem();
+  if (!limite.ok) {
+    const msg = `Você atingiu o limite de ${limite.limite} imagens/mês do plano ${limite.plano}.
+
+Faça upgrade para gerar mais imagens.`;
+    alert(msg);
+    if (callbackErro) callbackErro(msg);
+    return null;
+  }
+
+  if (callbackStatus) callbackStatus('Gerando imagem com IA...');
+
+  try {
+    // Tentar Pollinations.ai primeiro (sempre grátis)
+    const resultado = await gerarImagemPollinationsAi(prompt, width, height);
+    incrementarUsoImagens();
+
+    if (elementoDestino) {
+      elementoDestino.src = resultado.url;
+      elementoDestino.classList.remove('cv-img-hidden');
+    }
+    if (callbackStatus) callbackStatus(`✅ Imagem gerada! (${limite.uso + 1}/${limite.limite === Infinity ? '∞' : limite.limite} este mês)`);
+    if (callbackOk) callbackOk(resultado.url);
+    return resultado.url;
+
+  } catch (e1) {
+    // Fallback: Hugging Face
+    try {
+      if (callbackStatus) callbackStatus('Tentando via Hugging Face...');
+      const url = await gerarImagemHuggingFace(prompt);
+      incrementarUsoImagens();
+      if (elementoDestino) { elementoDestino.src = url; elementoDestino.classList.remove('cv-img-hidden'); }
+      if (callbackStatus) callbackStatus(`✅ Imagem gerada via HF! (${limite.uso + 1}/${limite.limite === Infinity ? '∞' : limite.limite} este mês)`);
+      if (callbackOk) callbackOk(url);
+      return url;
+    } catch (e2) {
+      const erro = 'Serviço de imagem temporariamente indisponível. Tente novamente em instantes.';
+      if (callbackStatus) callbackStatus('❌ ' + erro);
+      if (callbackErro) callbackErro(erro);
+      return null;
+    }
+  }
+}
+
+// ── GERAR CAPA DA OBRA ─────────────────────────────────────────
+async function gerarCapaObra() {
+  const w = getActiveWork();
+  if (!w) return;
+  const prompt = imagePromptForCover(w);
+  const container = document.getElementById('cv-capa-preview');
+  const status = document.getElementById('cv-capa-status');
+  const btn = document.getElementById('cv-btn-gerar-capa');
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
+
+  // Determinar dimensões pela plataforma
+  const plano = getPlanoAtual();
+  const tamanho = plano === 'free' ? 512 : 1024;
+
+  await gerarImagem(prompt, {
+    width: tamanho, height: tamanho,
+    elementoDestino: document.getElementById('cv-capa-img'),
+    callbackStatus: txt => { if (status) status.textContent = txt; },
+    callbackOk: url => {
+      // Salvar URL da capa na obra
+      w.clip = w.clip || {};
+      w.clip.coverImageUrl = url;
+      touchWork(w, 'Capa gerada com IA');
+      saveState();
+      // Mostrar botão de download
+      const dl = document.getElementById('cv-btn-baixar-capa');
+      if (dl) { dl.href = url; dl.download = `capa-${w.title||'musica'}.jpg`; dl.classList.remove('cv-img-hidden'); }
+    },
+    callbackErro: () => { if (btn) { btn.disabled = false; btn.textContent = '🎨 Gerar capa'; } }
+  });
+  if (btn) { btn.disabled = false; btn.textContent = '🎨 Gerar capa'; }
+}
+
+// ── GERAR IMAGEM DE CENA DO CLIPE ──────────────────────────────
+async function gerarImagemCena(sceneId, btnEl) {
+  const w = getActiveWork();
+  if (!w) return;
+  const scene = w.clip?.scenes?.find(s => s.id === sceneId);
+  if (!scene) return;
+  const prompt = imagePromptForScene(w, scene, scene.storyboard || scene.prompt);
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Gerando...'; }
+
+  const plano = getPlanoAtual();
+  const tamanho = plano === 'free' ? 512 : 1024;
+
+  // Criar elemento de imagem para a cena se não existir
+  let imgEl = btnEl?.parentElement?.querySelector('.cv-cena-img');
+  if (!imgEl) {
+    imgEl = document.createElement('img');
+    imgEl.className = 'cv-cena-img cv-img-hidden';
+    imgEl.style.cssText = 'width:100%;border-radius:6px;margin-top:8px;max-height:200px;object-fit:cover';
+    btnEl?.parentElement?.appendChild(imgEl);
+  }
+
+  await gerarImagem(prompt, {
+    width: tamanho, height: Math.round(tamanho * 0.5625), // 16:9
+    elementoDestino: imgEl,
+    callbackStatus: txt => {
+      if (btnEl) btnEl.textContent = txt.startsWith('✅') ? '✅ Gerada' : txt;
+    },
+    callbackOk: url => {
+      scene.imageUrl = url;
+      if (scene._imgEl) { scene._imgEl = null; } // forçar recarregamento
+      touchWork(w, `Imagem gerada para cena ${scene.part}`);
+      saveState();
+    },
+  });
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🎨 Gerar imagem'; }
+}
+
+// ── GERAR TODAS AS IMAGENS DO CLIPE ────────────────────────────
+async function gerarTodasImagensClipe() {
+  const w = getActiveWork();
+  if (!w || !w.clip?.scenes?.length) { alert('Gere o roteiro primeiro.'); return; }
+  const btn = document.getElementById('cv-btn-gerar-todas-imgs');
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando todas...'; }
+
+  for (const scene of w.clip.scenes) {
+    const prompt = imagePromptForScene(w, scene, scene.storyboard || scene.prompt);
+    const plano = getPlanoAtual();
+    const tamanho = plano === 'free' ? 512 : 1024;
+    const limite = verificarLimiteImagem();
+    if (!limite.ok) {
+      alert(`Limite de imagens atingido (${limite.uso}/${limite.limite}). Upgrade de plano para continuar.`);
+      break;
+    }
+    await gerarImagem(prompt, {
+      width: tamanho, height: Math.round(tamanho * 0.5625),
+      callbackOk: url => { scene.imageUrl = url; saveState(); }
+    });
+    // Delay entre imagens para não sobrecarregar a API
+    await new Promise(r => setTimeout(r, 1500));
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🎨 Gerar todas as imagens'; }
+  renderClipScenes();
+}
+
+// ── MOSTRAR CONTADOR DE CRÉDITOS ───────────────────────────────
+function renderizarContadorImagens() {
+  const el = document.getElementById('cv-contador-imgs');
+  if (!el) return;
+  const { uso, limite, plano } = verificarLimiteImagem();
+  const limiteStr = limite === Infinity ? '∞' : limite;
+  el.textContent = `🎨 Imagens: ${uso}/${limiteStr} — plano ${plano}`;
+  el.style.color = uso >= limite * 0.8 ? 'var(--danger)' : 'var(--muted)';
+}
 function imagePromptForCover(w){return`Capa visual do videoclipe "${w.title}". Conceito: ${w.clip.concept||w.title}. ${w.clip.style||"cinematografico realista"}, personagem: ${w.clip.persona||"protagonista"}, locacao: ${w.clip.location||"ambiente da musica"}, clima: ${w.clip.mood||w.mood||"emocional"}, paleta: ${w.clip.palette||"tons naturais"}, imagem premium para divulgacao, sem texto, sem logos.`}
 function generateStoryboard(){const w=getActiveWork();if(!w)return;if(!w.clip.scenes.length)generateClipPlan();w.clip.coverPrompt=w.clip.coverPrompt||imagePromptForCover(w);w.clip.scenes.forEach((scene,i)=>{scene.imagePrompt=scene.imagePrompt||imagePromptForScene(w,scene,scene.prompt);const base=`Quadro ${i+1}: ${scene.shot}; foco em ${scene.part}; emocao ${w.clip.mood||w.mood||"principal"}; transicao sugerida para o take seguinte.`;scene.storyboard=scene.storyboard?.trim()?scene.storyboard:base});w.clip.checklist["Storyboard visual criado"]=true;touchWork(w,"Storyboard visual do videoclipe gerado");render()}
 function addClipScene(){const w=getActiveWork();if(!w)return;const scene={id:createId(),part:"Nova cena",duration:"6s",shot:"plano medio cinematografico",status:"planejada",prompt:clipPrompt({title:w.title,concept:w.clip.concept||w.title,style:w.clip.style||"cinematografico realista",palette:w.clip.palette||"tons naturais",mood:w.clip.mood||w.mood||"emocional",location:w.clip.location||"locacao coerente com a letra",persona:w.clip.persona||"protagonista",part:"Nova cena",text:"novo momento visual da musica"}),imagePrompt:"",storyboard:"",takeUrl:"",assetNotes:""};scene.imagePrompt=imagePromptForScene(w,scene,"novo momento visual da musica");w.clip.scenes.push(scene);touchWork(w,"Cena de videoclipe adicionada");renderClip();renderReadiness();renderSummary()}
@@ -72,11 +317,274 @@ function bindExportEvents(){["#exportPresetInput","#exportQualityInput","#export
 function bindInternationalEvents(){["#sourceLanguageInput","#targetLanguageInput","#targetMarketInput","#adaptationModeInput","#internationalReviewInput"].forEach(s=>{$(s)?.addEventListener("input",updateInternationalSettings);$(s)?.addEventListener("change",updateInternationalSettings)});$("#generateInternationalButton")?.addEventListener("click",generateInternationalAdaptation);$("#saveInternationalButton")?.addEventListener("click",saveInternationalVersion);$("#plusOfferButton")?.addEventListener("click",markPlusInterest);$("#generateInternationalClipButton")?.addEventListener("click",generateInternationalClip);$("#primeOfferButton")?.addEventListener("click",markPrimeInterest)}
 function bindCommercialEvents(){$("#professionalPathButton")?.addEventListener("click",()=>setCreativePath("professional"));$("#assistedPathButton")?.addEventListener("click",()=>setCreativePath("assisted"));$("#acceptAwarenessButton")?.addEventListener("click",acceptAwarenessTerm);$("#acceptRevenueShareButton")?.addEventListener("click",acceptRevenueShareTerm);document.querySelectorAll("[data-origin]").forEach(i=>i.addEventListener("change",()=>toggleOriginMaterial(i.dataset.origin,i.checked)));$("#smartOfferBox")?.addEventListener("click",e=>{const action=e.target?.dataset?.offerAction;if(action==="accept")acceptSmartOffer();if(action==="dismiss")dismissSmartOffer()})}
 function updateExportSettings(){const w=getActiveWork();if(!w)return;w.clip.exportPreset=$("#exportPresetInput").value;w.clip.exportQuality=$("#exportQualityInput").value;w.clip.exportSceneSeconds=Number($("#exportSceneSecondsInput").value||4);w.clip.exportFileName=$("#exportFileNameInput").value;w.clip.exportCaption=$("#exportCaptionInput").value;w.updatedAt=new Date().toISOString();saveState();renderExportPanel();renderReadiness()}
-function renderExportPanel(){const w=getActiveWork();if(!w||!$("#exportPresetInput"))return;const preset=EXPORT_PRESETS[w.clip.exportPreset]||EXPORT_PRESETS.tiktok;$("#exportPresetInput").value=w.clip.exportPreset||"tiktok";$("#exportQualityInput").value=w.clip.exportQuality||"padrao";$("#exportSceneSecondsInput").value=w.clip.exportSceneSeconds||4;$("#exportFileNameInput").value=w.clip.exportFileName||slugify(w.title||"videoclipe-final");$("#exportCaptionInput").value=w.clip.exportCaption||"";const canvas=$("#renderCanvas");if(canvas){canvas.width=preset.width;canvas.height=preset.height;drawExportFrame(canvas,w,preset,w.clip.scenes[0],0,0)}const ready={scenes:w.clip.scenes.length>0,prompts:w.clip.scenes.some(s=>s.prompt),storyboard:w.clip.scenes.some(s=>s.storyboard||s.imagePrompt),takes:w.clip.scenes.some(s=>s.takeUrl),rendered:Boolean(w.clip.renderedAt),mp4:Boolean(w.clip.mp4RenderedAt)};$("#exportSpec").textContent=`${preset.label}: ${preset.ratio}, ${preset.width}x${preset.height}. ${preset.hint}`;$("#exportStatus").textContent=w.clip.renderedAt?`Ultimo render: ${formatDate(w.clip.renderedAt)} (${w.clip.renderedFormat||"video/webm"})`:"Pronto para renderizar.";$("#mp4Status").textContent=w.clip.mp4RenderedAt?`MP4 profissional gerado em ${formatDate(w.clip.mp4RenderedAt)}: ${w.clip.mp4File}`:"MP4 profissional: renderize o video e depois converta com FFmpeg.";if(!w.clip.mp4RenderedAt)updateMp4Progress(0,"Aguardando conversao.");$("#exportChecklist").innerHTML=[["Cenas criadas",ready.scenes],["Prompts prontos",ready.prompts],["Storyboard pronto",ready.storyboard],["Takes catalogados",ready.takes],["Video renderizado",ready.rendered],["MP4 profissional",ready.mp4]].map(([label,ok])=>`<span class="check-item ${ok?"done":""}">${ok?"ok":"-"} ${label}</span>`).join("");$("#downloadRenderedClipButton").disabled=!renderedClipBlob;$("#convertMp4Button").disabled=!renderedClipBlob;$("#downloadMp4Button").disabled=!mp4ClipBlob}
+function renderExportPanel(){const w=getActiveWork();if(!w||!$("#exportPresetInput"))return;renderizarContadorImagens();const preset=EXPORT_PRESETS[w.clip.exportPreset]||EXPORT_PRESETS.tiktok;$("#exportPresetInput").value=w.clip.exportPreset||"tiktok";$("#exportQualityInput").value=w.clip.exportQuality||"padrao";$("#exportSceneSecondsInput").value=w.clip.exportSceneSeconds||4;$("#exportFileNameInput").value=w.clip.exportFileName||slugify(w.title||"videoclipe-final");$("#exportCaptionInput").value=w.clip.exportCaption||"";const canvas=$("#renderCanvas");if(canvas){canvas.width=preset.width;canvas.height=preset.height;drawExportFrame(canvas,w,preset,w.clip.scenes[0],0,0)}const ready={scenes:w.clip.scenes.length>0,prompts:w.clip.scenes.some(s=>s.prompt),storyboard:w.clip.scenes.some(s=>s.storyboard||s.imagePrompt),takes:w.clip.scenes.some(s=>s.takeUrl),rendered:Boolean(w.clip.renderedAt),mp4:Boolean(w.clip.mp4RenderedAt)};$("#exportSpec").textContent=`${preset.label}: ${preset.ratio}, ${preset.width}x${preset.height}. ${preset.hint}`;$("#exportStatus").textContent=w.clip.renderedAt?`Ultimo render: ${formatDate(w.clip.renderedAt)} (${w.clip.renderedFormat||"video/webm"})`:"Pronto para renderizar.";$("#mp4Status").textContent=w.clip.mp4RenderedAt?`MP4 profissional gerado em ${formatDate(w.clip.mp4RenderedAt)}: ${w.clip.mp4File}`:"MP4 profissional: renderize o video e depois converta com FFmpeg.";if(!w.clip.mp4RenderedAt)updateMp4Progress(0,"Aguardando conversao.");$("#exportChecklist").innerHTML=[["Cenas criadas",ready.scenes],["Prompts prontos",ready.prompts],["Storyboard pronto",ready.storyboard],["Takes catalogados",ready.takes],["Video renderizado",ready.rendered],["MP4 profissional",ready.mp4]].map(([label,ok])=>`<span class="check-item ${ok?"done":""}">${ok?"ok":"-"} ${label}</span>`).join("");$("#downloadRenderedClipButton").disabled=!renderedClipBlob;$("#convertMp4Button").disabled=!renderedClipBlob;$("#downloadMp4Button").disabled=!mp4ClipBlob}
 function updateMp4Progress(ratio,label,isError=false){const bar=$("#mp4ProgressBar"),text=$("#mp4ProgressText"),box=$(".mp4-progress");const pct=Math.max(0,Math.min(100,Math.round(Number(ratio||0)*100)));if(bar)bar.style.width=`${pct}%`;if(text)text.textContent=label||`${pct}%`;if(box)box.classList.toggle("error",Boolean(isError))}
-function drawExportFrame(canvas,w,preset,scene,index,total){const ctx=canvas.getContext("2d");const width=canvas.width,height=canvas.height;const grad=ctx.createLinearGradient(0,0,width,height);grad.addColorStop(0,"#15130f");grad.addColorStop(.55,"#5b4525");grad.addColorStop(1,"#0f3434");ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);ctx.fillStyle="rgba(255,250,242,.09)";for(let i=0;i<7;i++){ctx.fillRect((i*width/7+index*18)%width,0,2,height)}ctx.fillStyle="#f7ead3";ctx.textAlign="center";ctx.textBaseline="middle";fitText(ctx,w.title||"Caderno Vivo",width*.11,80,width*.86,height*.18);ctx.fillStyle="#d8b56f";fitText(ctx,scene?.part||"Videoclipe",width*.065,42,width*.82,height*.35);ctx.fillStyle="#fffaf2";fitText(ctx,firstLine(scene?.storyboard)||firstLine(scene?.prompt)||w.clip.concept||"Cena cinematografica",width*.045,28,width*.78,height*.52);ctx.fillStyle="rgba(255,250,242,.82)";fitText(ctx,w.clip.exportCaption||preset.platform,width*.032,22,width*.76,height*.78);ctx.fillStyle="rgba(0,0,0,.34)";ctx.fillRect(width*.08,height*.88,width*.84,Math.max(8,height*.012));ctx.fillStyle="#d8b56f";ctx.fillRect(width*.08,height*.88,width*.84*((index+1)/Math.max(total,1)),Math.max(8,height*.012))}
+/* ── LYRIC VIDEO ENGINE — Kinetic Typography + Canvas Cinematográfico ── */
+const CV_PALETAS={
+  "tons naturais com acento cobre":["#15130f","#2a1f0d","#d8b56f","#f7ead3"],
+  "escuro e dramático":["#08080f","#1a1a2e","#7b9ee0","#e8f0fe"],
+  "quente e intimista":["#1a0a00","#3d1f00","#e8935a","#fff0e8"],
+  "azul profundo":["#030b1a","#0d2137","#4a9fd4","#e8f4fd"],
+  "gospel e luz":["#0d0a00","#2a2200","#f0c040","#fffdf0"],
+  "minimalista":["#0a0a0a","#1a1a1a","#888888","#ffffff"],
+};
+function getPaleta(w){
+  const p=w.clip?.palette||"";
+  for(const k of Object.keys(CV_PALETAS)){if(p.toLowerCase().includes(k.split(" ")[0]))return CV_PALETAS[k];}
+  return CV_PALETAS["tons naturais com acento cobre"];
+}
+function wrapText(ctx,text,x,y,maxW,lineH){
+  const words=text.split(" ");let line="";const lines=[];
+  for(const word of words){const test=line?line+" "+word:word;if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=word;}else{line=test;}}
+  if(line)lines.push(line);
+  const startY=y-(lines.length-1)*lineH/2;
+  lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineH));
+  return lines.length;
+}
+function drawKineticFrame(canvas,w,preset,scene,progress,sceneIdx,total,beatPhase){
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width,H=canvas.height;
+  const pal=getPaleta(w);
+  const [bg1,bg2,accent,text1]=pal;
+
+  // ── FUNDO com gradiente dinâmico ──
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  const shift=Math.sin(progress*Math.PI*2)*0.08;
+  grad.addColorStop(0,bg1);
+  grad.addColorStop(Math.max(0.1,Math.min(0.9,0.5+shift)),bg2);
+  grad.addColorStop(1,bg1);
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  // ── PARTÍCULAS pulsantes no beat ──
+  const pulse=1+Math.sin(beatPhase*Math.PI*2)*0.03;
+  ctx.save();
+  for(let i=0;i<12;i++){
+    const angle=(i/12)*Math.PI*2+progress*0.5;
+    const r=(W*0.38)*pulse;
+    const px=W/2+Math.cos(angle)*r;
+    const py=H/2+Math.sin(angle)*r*0.6;
+    const alpha=0.04+Math.sin(beatPhase*Math.PI*2+i)*0.03;
+    ctx.beginPath();
+    ctx.arc(px,py,W*0.003,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${hexRgb(accent)},${alpha})`;
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // ── FORMAS geométricas abstratas (visualizer) ──
+  ctx.save();
+  const shapes=5;
+  for(let i=0;i<shapes;i++){
+    const t=progress+i/shapes;
+    const x=W*(0.1+0.8*(i/shapes));
+    const barH=H*0.06*(0.5+Math.sin(beatPhase*Math.PI*4+i)*0.5);
+    const alpha=0.12+Math.sin(beatPhase*Math.PI*2+i*0.7)*0.06;
+    ctx.fillStyle=`rgba(${hexRgb(accent)},${alpha})`;
+    const bw=W*0.04;
+    ctx.fillRect(x-bw/2,H*0.85-barH,bw,barH);
+  }
+  ctx.restore();
+
+  // ── VINHETA cinematográfica ──
+  const vig=ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.85);
+  vig.addColorStop(0,"rgba(0,0,0,0)");
+  vig.addColorStop(1,"rgba(0,0,0,0.72)");
+  ctx.fillStyle=vig;
+  ctx.fillRect(0,0,W,H);
+
+  // ── FOTO DO ARTISTA (se tiver) ──
+  if(scene?._imgEl){
+    ctx.save();
+    // Ken Burns: zoom suave de 100% a 108%
+    const zoom=1+progress*0.08;
+    const iw=scene._imgEl.naturalWidth||W;
+    const ih=scene._imgEl.naturalHeight||H;
+    const scale=Math.max(W/iw,H/ih)*zoom;
+    const dx=(W-iw*scale)/2;
+    const dy=(H-ih*scale)/2;
+    ctx.globalAlpha=0.45;
+    ctx.drawImage(scene._imgEl,dx,dy,iw*scale,ih*scale);
+    ctx.globalAlpha=1;
+    // Overlay de cor (duotone)
+    ctx.fillStyle=`rgba(${hexRgb(bg1)},0.55)`;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+
+  // ── FADE IN/OUT entre cenas ──
+  if(progress<0.08){
+    ctx.fillStyle=`rgba(0,0,0,${1-progress/0.08})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  if(progress>0.92){
+    ctx.fillStyle=`rgba(0,0,0,${(progress-0.92)/0.08})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // ── NOME DA PARTE (parte superior, pequeno) ──
+  ctx.save();
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.fillStyle=`rgba(${hexRgb(accent)},0.7)`;
+  ctx.font=`${Math.max(14,W*0.022)}px Inter,Arial,sans-serif`;
+  ctx.letterSpacing="0.15em";
+  ctx.fillText((scene?.part||"").toUpperCase(),W/2,H*0.12);
+  ctx.restore();
+
+  // ── TÍTULO DA MÚSICA (Kinetic — escala com beat) ──
+  ctx.save();
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  const titleScale=1+Math.sin(beatPhase*Math.PI*2)*0.015;
+  ctx.translate(W/2,H*0.28);
+  ctx.scale(titleScale,titleScale);
+  ctx.fillStyle=text1;
+  const titleSize=Math.max(20,Math.min(W*0.065,72));
+  ctx.font=`700 ${titleSize}px Inter,Arial,sans-serif`;
+  ctx.shadowColor=accent;
+  ctx.shadowBlur=W*0.012;
+  wrapText(ctx,w.title||"Caderno Vivo",0,0,W*0.82,titleSize*1.3);
+  ctx.restore();
+
+  // ── LETRA DA CENA (principal — Kinetic Typography) ──
+  const lyricLine=getLyricLine(w,scene,sceneIdx);
+  if(lyricLine){
+    ctx.save();
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    // Animação de entrada: slide up
+    const enterY=progress<0.15?(1-progress/0.15)*H*0.04:0;
+    const lyricAlpha=progress<0.1?progress/0.1:progress>0.88?1-(progress-0.88)/0.12:1;
+    ctx.globalAlpha=lyricAlpha;
+    ctx.translate(W/2,H*0.55+enterY);
+    const lyricScale=1+Math.sin(beatPhase*Math.PI*2)*0.008;
+    ctx.scale(lyricScale,lyricScale);
+    // Sombra da letra
+    ctx.shadowColor="rgba(0,0,0,0.9)";
+    ctx.shadowBlur=W*0.018;
+    ctx.fillStyle=text1;
+    const lyricSize=Math.max(18,Math.min(W*0.055,60));
+    ctx.font=`500 ${lyricSize}px Inter,Arial,sans-serif`;
+    wrapText(ctx,lyricLine,0,0,W*0.8,lyricSize*1.4);
+    ctx.restore();
+  }
+
+  // ── LINHA DECORATIVA ACCENT ──
+  ctx.save();
+  const lineW=W*0.12*(0.5+Math.sin(beatPhase*Math.PI*2)*0.5+0.5);
+  ctx.fillStyle=accent;
+  ctx.fillRect(W/2-lineW/2,H*0.72,lineW,Math.max(2,H*0.003));
+  ctx.restore();
+
+  // ── CAPTION / CRÉDITO ──
+  if(w.clip?.exportCaption){
+    ctx.save();
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillStyle=`rgba(${hexRgb(text1)},0.55)`;
+    ctx.font=`${Math.max(11,W*0.018)}px Inter,Arial,sans-serif`;
+    ctx.fillText(w.clip.exportCaption,W/2,H*0.9);
+    ctx.restore();
+  }
+
+  // ── BARRA DE PROGRESSO dourada ──
+  ctx.fillStyle="rgba(0,0,0,0.35)";
+  ctx.fillRect(W*0.08,H*0.945,W*0.84,Math.max(3,H*0.008));
+  ctx.fillStyle=accent;
+  const prog=(sceneIdx+progress)/Math.max(total,1);
+  ctx.fillRect(W*0.08,H*0.945,W*0.84*prog,Math.max(3,H*0.008));
+
+  // ── MARCA D'ÁGUA ──
+  ctx.save();
+  ctx.textAlign="right";
+  ctx.textBaseline="bottom";
+  ctx.fillStyle=`rgba(${hexRgb(accent)},0.35)`;
+  ctx.font=`${Math.max(10,W*0.016)}px Inter,Arial,sans-serif`;
+  ctx.fillText("caderno vivo",W*0.95,H*0.97);
+  ctx.restore();
+}
+function hexRgb(hex){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+function getLyricLine(w,scene,idx){
+  // Pegar linha da letra correspondente à cena
+  const lines=(w.lyrics||"").split("\n").map(l=>l.trim()).filter(Boolean);
+  if(!lines.length)return scene?.storyboard||scene?.prompt||w.clip?.concept||"";
+  return lines[idx%lines.length]||lines[0];
+}
+function drawExportFrame(canvas,w,preset,scene,index,total){
+  const progress=index%1||0;
+  const sceneIdx=Math.floor(index)||0;
+  const beatPhase=(index*2)%1;
+  drawKineticFrame(canvas,w,preset,scene,progress,sceneIdx,total,beatPhase);
+}
 function fitText(ctx,text,maxSize,minSize,maxWidth,y){let size=maxSize;ctx.font=`700 ${size}px Inter, Segoe UI, Arial`;while(ctx.measureText(text).width>maxWidth&&size>minSize){size-=2;ctx.font=`700 ${size}px Inter, Segoe UI, Arial`}const words=String(text||"").split(" ");let line="",lines=[];for(const word of words){const test=line?`${line} ${word}`:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);const lineHeight=size*1.18;lines.slice(0,3).forEach((l,i)=>ctx.fillText(l,ctx.canvas.width/2,y+(i-(Math.min(lines.length,3)-1)/2)*lineHeight))}
-async function renderFinalClip(){const w=getActiveWork();if(!w)return;if(!w.clip.scenes.length)generateClipPlan();if(!w.clip.scenes.some(s=>s.storyboard||s.imagePrompt))generateStoryboard();if(!window.MediaRecorder){$("#exportStatus").textContent="Este navegador nao suporta renderizacao local de video.";return}const preset=EXPORT_PRESETS[w.clip.exportPreset]||EXPORT_PRESETS.tiktok;const canvas=$("#renderCanvas");canvas.width=preset.width;canvas.height=preset.height;const fps=24,seconds=Math.max(2,Math.min(12,Number(w.clip.exportSceneSeconds||4)));const stream=canvas.captureStream(fps);const mime=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";const chunks=[];const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:w.clip.exportQuality==="alta"?6000000:w.clip.exportQuality==="leve"?1800000:3500000});rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};$("#exportStatus").textContent="Renderizando video...";rec.start();const scenes=w.clip.scenes.length?w.clip.scenes:[normalizeClipScene({part:"Cena",prompt:w.clip.concept})];for(let i=0;i<scenes.length;i++){const frames=seconds*fps;for(let f=0;f<frames;f++){drawExportFrame(canvas,w,preset,scenes[i],i+f/frames,scenes.length);await new Promise(r=>setTimeout(r,1000/fps))}}await new Promise(resolve=>{rec.onstop=resolve;rec.stop()});if(renderedClipUrl)URL.revokeObjectURL(renderedClipUrl);renderedClipBlob=new Blob(chunks,{type:"video/webm"});renderedClipUrl=URL.createObjectURL(renderedClipBlob);$("#renderedVideoPreview").src=renderedClipUrl;$("#renderedVideoPreview").classList.remove("hidden");$("#downloadRenderedClipButton").disabled=false;w.clip.renderedAt=new Date().toISOString();w.clip.renderedFormat="video/webm";w.clip.finalVideo=`${exportFileBase(w)}.webm`;if(els.clipFinalVideoInput)els.clipFinalVideoInput.value=w.clip.finalVideo;w.clip.checklist["Video renderizado para plataforma"]=true;touchWork(w,`Videoclipe renderizado para ${preset.label}`);renderExportPanel();renderSummary();renderReadiness();renderTimeline()}
+async function renderFinalClip(){
+  const w=getActiveWork();if(!w)return;
+  if(!w.clip.scenes.length)generateClipPlan();
+  if(!w.clip.scenes.some(s=>s.storyboard||s.imagePrompt))generateStoryboard();
+  if(!window.MediaRecorder){$("#exportStatus").textContent="Este navegador nao suporta renderizacao local de video.";return}
+  const preset=EXPORT_PRESETS[w.clip.exportPreset]||EXPORT_PRESETS.tiktok;
+  const canvas=$("#renderCanvas");
+  canvas.width=preset.width;canvas.height=preset.height;
+  const fps=24;
+  const seconds=Math.max(2,Math.min(12,Number(w.clip.exportSceneSeconds||4)));
+  // Pré-carregar imagens das cenas
+  const scenes=w.clip.scenes.length?w.clip.scenes:[normalizeClipScene({part:"Cena",prompt:w.clip.concept})];
+  for(const sc of scenes){
+    if(sc.imageUrl&&!sc._imgEl){
+      try{
+        const img=new Image();img.crossOrigin="anonymous";
+        await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=sc.imageUrl;});
+        sc._imgEl=img;
+      }catch(e){sc._imgEl=null;}
+    }
+  }
+  const mime=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
+  const chunks=[];
+  const stream=canvas.captureStream(fps);
+  const bitrate=w.clip.exportQuality==="alta"?6000000:w.clip.exportQuality==="leve"?1800000:3500000;
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:bitrate});
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  // Análise de beat via BPM da obra
+  const bpm=Number(w.bpm)||80;
+  const beatInterval=60/bpm;
+  let startTime=null;
+  $("#exportStatus").textContent="Renderizando Lyric Video...";
+  rec.start();
+  for(let i=0;i<scenes.length;i++){
+    const frames=seconds*fps;
+    for(let f=0;f<frames;f++){
+      if(!startTime)startTime=performance.now();
+      const elapsed=(performance.now()-(startTime||0))/1000;
+      const beatPhase=(elapsed/beatInterval)%1;
+      const progress=f/frames;
+      drawKineticFrame(canvas,w,preset,scenes[i],progress,i,scenes.length,beatPhase);
+      const pct=Math.round(((i*frames+f)/(scenes.length*frames))*100);
+      if(f%fps===0)$("#exportStatus").textContent=`Renderizando... ${pct}%`;
+      await new Promise(r=>setTimeout(r,1000/fps));
+    }
+  }
+  await new Promise(resolve=>{rec.onstop=resolve;rec.stop();});
+  if(renderedClipUrl)URL.revokeObjectURL(renderedClipUrl);
+  renderedClipBlob=new Blob(chunks,{type:"video/webm"});
+  renderedClipUrl=URL.createObjectURL(renderedClipBlob);
+  $("#renderedVideoPreview").src=renderedClipUrl;
+  $("#renderedVideoPreview").classList.remove("hidden");
+  $("#downloadRenderedClipButton").disabled=false;
+  w.clip.renderedAt=new Date().toISOString();
+  w.clip.renderedFormat="video/webm";
+  w.clip.finalVideo=`${exportFileBase(w)}.webm`;
+  if(els.clipFinalVideoInput)els.clipFinalVideoInput.value=w.clip.finalVideo;
+  w.clip.checklist["Video renderizado para plataforma"]=true;
+  touchWork(w,`Lyric Video renderizado para ${preset.label}`);
+  renderExportPanel();renderSummary();renderReadiness();renderTimeline();
+  $("#exportStatus").textContent=`✅ Lyric Video pronto! ${preset.label} — ${preset.width}x${preset.height}`;
+}
 function exportFileBase(w){return slugify(w.clip.exportFileName||`${w.title||"videoclipe"}-${w.clip.exportPreset||"video"}`)}
 function downloadRenderedClip(){if(!renderedClipBlob)return;const w=getActiveWork();const a=document.createElement("a");a.href=renderedClipUrl;a.download=`${exportFileBase(w)}.webm`;document.body.appendChild(a);a.click();a.remove()}
 async function ensureFfmpeg(){if(ffmpegInstance)return ffmpegInstance;if(!window.FFmpeg){$("#mp4Status").textContent="Carregando FFmpeg WebAssembly...";updateMp4Progress(.08,"Carregando biblioteca FFmpeg...");await loadScript("https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js")}if(!window.FFmpeg?.createFFmpeg)throw new Error("FFmpeg WebAssembly nao foi carregado.");const {createFFmpeg}=window.FFmpeg;ffmpegInstance=createFFmpeg({log:false,corePath:"https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"});ffmpegInstance.setProgress?.(({ratio})=>updateMp4Progress(.25+Math.max(0,Math.min(1,ratio||0))*.65,`Convertendo MP4: ${Math.round(Math.max(0,Math.min(1,ratio||0))*100)}%`));updateMp4Progress(.15,"Inicializando motor de video...");await ffmpegInstance.load();return ffmpegInstance}
@@ -100,7 +608,8 @@ function toggleSessionStep(id,i){const w=getActiveWork();const s=w?.sessions.fin
 function getReviveAction(w){if(!w.lyrics.trim())return"Escreva quatro linhas livres sobre a emocao principal.";if(!w.versions.length)return"Salve a primeira versao para proteger este momento.";if(!w.mentor.length)return"Peca ao Mentor Criativo uma alternativa para o refrao.";if(!w.audios.length)return"Adicione uma voz guia, demo ou referencia sonora.";if(!w.production.nextAction.trim())return"Defina a proxima acao de repertorio ou producao.";if(["lancado","pos-lancamento"].includes(w.release.status)&&!w.release.mainLink.trim())return"Informe o link principal do lancamento.";return"Compare uma versao antiga com a atual e escolha o proximo ajuste."}
 function renderRevive(){const w=getActiveWork();if(!w)return;const days=Math.floor((Date.now()-new Date(w.updatedAt).getTime())/86400000);els.reviveText.textContent=(days>0?`Parada ha ${days} dia(s). `:"Em movimento. ")+getReviveAction(w)}
 function applyReviveAction(){const w=getActiveWork();if(!w)return;addTimeline(w,`Acao sugerida: ${getReviveAction(w)}`);saveState();renderTimeline()}
-function generateMentor(){const w=getActiveWork();if(!w)return;const mode=els.mentorModeInput.value;const part=els.mentorSectionInput.value;const intent=els.mentorIntentInput.value.trim()||w.mood||"emocao principal";const base=lastLine(w.lyrics)||"a ideia ainda esta nascendo";const genre=w.genre||"cancao brasileira";const key=w.key?` em ${w.key}`:"";let text="";if(mode==="new")text=`Tema: ${intent}\nGenero: ${genre}${key}\n\nVerso\nEu vi meu sonho acordar devagar\nMesmo no medo, eu continuei\nCada silencio me ensinou a cantar\nO que eu guardei, hoje entregarei\n\nRefrao\nVai clarear, vai florescer\nMinha voz encontra o caminho\nSe o mundo pesar, eu vou escrever\nUm novo sol dentro de mim`;else if(mode==="metric")text=metricAdvice(w.lyrics);else if(mode==="improve")text=`Sugestao para melhorar o ${part}:\nMantenha a ideia "${base}" e aumente contraste emocional.\n\nAlternativa:\nSe a noite tentar me calar\nEu canto mais alto pra vida ouvir\nO que nasceu pequeno no peito\nHoje aprendeu a existir`;else text=`Continuação sugerida para o ${part}:\n${base}\nE se faltar coragem, eu lembro quem sou\nA minha verdade vira melodia\nNo passo imperfeito, o sonho chegou\nPra transformar saudade em poesia`;pendingMentorText=text;els.mentorOutput.textContent=text;w.mentor.unshift({id:createId(),mode,section:part,intent,text,createdAt:new Date().toISOString()});touchWork(w,"Mentor Criativo gerou sugestao");renderSummary();renderMentorHistory();renderReadiness()}
+async function generateMentor(){const w=getActiveWork();if(!w)return;const mode=els.mentorModeInput.value;const part=els.mentorSectionInput.value;const intent=els.mentorIntentInput.value.trim()||w.mood||"emocao principal";const base=lastLine(w.lyrics)||"a ideia ainda esta nascendo";const btn=els.generateMentorButton;if(btn){btn.disabled=true;btn.textContent="Gerando...";}els.mentorOutput.textContent="Maestro pensando...";try{const resp=await fetch('/api/maestro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'mentor',dados:{letra:w.lyrics||base,modo:mode,parte:part,intencao:intent}})});if(resp.ok){const data=await resp.json();const text=data.resultado||"";pendingMentorText=text;els.mentorOutput.textContent=text;w.mentor.unshift({id:createId(),mode,section:part,intent,text,createdAt:new Date().toISOString()});touchWork(w,"Mentor Criativo gerou sugestao com IA");renderSummary();renderMentorHistory();renderReadiness();}else{throw new Error("API indisponível");}}catch(e){// Fallback local se API indisponível
+const genre=w.genre||"cancao brasileira";const key=w.key?` em ${w.key}`:"";let text="";if(mode==="new")text=`Tema: ${intent}\nGenero: ${genre}${key}\n\nVerso\nEu vi meu sonho acordar devagar\nMesmo no medo, eu continuei\nCada silencio me ensinou a cantar\nO que eu guardei, hoje entregarei\n\nRefrao\nVai clarear, vai florescer\nMinha voz encontra o caminho\nSe o mundo pesar, eu vou escrever\nUm novo sol dentro de mim`;else if(mode==="metric")text=metricAdvice(w.lyrics);else if(mode==="improve")text=`Sugestao para melhorar o ${part}:\nMantenha a ideia "${base}" e aumente contraste emocional.\n\nAlternativa:\nSe a noite tentar me calar\nEu canto mais alto pra vida ouvir\nO que nasceu pequeno no peito\nHoje aprendeu a existir`;else text=`Continuacao sugerida para o ${part}:\n${base}\nE se faltar coragem, eu lembro quem sou\nA minha verdade vira melodia\nNo passo imperfeito, o sonho chegou\nPra transformar saudade em poesia`;pendingMentorText=text;els.mentorOutput.textContent=text;w.mentor.unshift({id:createId(),mode,section:part,intent,text,createdAt:new Date().toISOString()});touchWork(w,"Mentor Criativo gerou sugestao");renderSummary();renderMentorHistory();renderReadiness();}finally{if(btn){btn.disabled=false;btn.textContent="Gerar sugestao";}}}
 function metricAdvice(text){const lines=text.split("\n").filter(l=>l.trim());if(!lines.length)return"Ainda nao ha letra suficiente para analisar metrica.";const counts=lines.map(l=>l.trim().split(/\s+/).length);const avg=Math.round(counts.reduce((a,b)=>a+b,0)/counts.length);return`Analise simples de metrica:\nLinhas analisadas: ${lines.length}\nMedia de palavras por linha: ${avg}\nMapa: ${counts.join(" / ")}\n\nDirecao: mantenha versos proximos de ${avg} palavras para soar mais cantavel. Se uma linha fugir muito, divida em duas ou corte palavras fracas.`}
 function applyMentor(){const w=getActiveWork();if(!w||!pendingMentorText.trim())return;w.lyrics=(w.lyrics.trim()?w.lyrics.trim()+"\n\n":"")+pendingMentorText;pendingMentorText="";touchWork(w,"Sugestao do Mentor aplicada a letra");render()}
 function updateInternationalSettings(){const w=getActiveWork();if(!w)return;w.international.sourceLanguage=$("#sourceLanguageInput")?.value||w.international.sourceLanguage;w.international.targetLanguage=$("#targetLanguageInput")?.value||w.international.targetLanguage;w.international.targetMarket=$("#targetMarketInput")?.value||"";w.international.mode=$("#adaptationModeInput")?.value||w.international.mode;w.international.reviewText=$("#internationalReviewInput")?.value||"";w.updatedAt=new Date().toISOString();saveState();renderWorks()}
@@ -152,7 +661,41 @@ function getReadiness(w){evaluateCommercialProfile(w);const sec=getSecurityAudit
 function renderReadiness(){const w=getActiveWork();if(!w)return;const r=getReadiness(w);els.readinessPercent.textContent=`${r.percent}%`;els.readinessBar.style.width=`${r.percent}%`;els.readinessList.innerHTML=r.items.map(i=>`<span class="check-item ${i.ok?"done":""}">${i.ok?"ok":"-"} ${esc(i.label)}</span>`).join("")}
 function renderProduction(){const w=getActiveWork();if(!w)return;els.productionChecklist.innerHTML=PRODUCTION_ITEMS.map(i=>checkItem("production",i,Boolean(w.production.checklist[i]))).join("");els.productionChecklist.querySelectorAll("input").forEach(i=>i.addEventListener("change",()=>toggleProductionItem(i.value)))}
 function renderRelease(){const w=getActiveWork();if(!w)return;els.releaseChecklist.innerHTML=RELEASE_ITEMS.map(i=>checkItem("release",i,Boolean(w.release.checklist[i]))).join("");els.releaseChecklist.querySelectorAll("input").forEach(i=>i.addEventListener("change",()=>toggleReleaseItem(i.value)))}
-function renderClip(){const w=getActiveWork();if(!w)return;els.clipChecklist.innerHTML=CLIP_ITEMS.map(i=>checkItem("clip",i,Boolean(w.clip.checklist[i]))).join("");els.clipChecklist.querySelectorAll("input").forEach(i=>i.addEventListener("change",()=>toggleClipItem(i.value)));els.clipScenesList.innerHTML=w.clip.scenes.length?"":'<div class="phrase-card"><p>Nenhuma cena criada. Gere um roteiro para transformar a letra em takes curtos.</p></div>';w.clip.scenes.forEach(s=>{const d=document.createElement("div");d.className="clip-scene-card";d.innerHTML=`<div class="clip-scene-grid"><input data-field="part" value="${attr(s.part)}" placeholder="Parte"><input data-field="duration" value="${attr(s.duration)}" placeholder="6s"><input data-field="shot" value="${attr(s.shot)}" placeholder="Plano/camera"><select data-field="status"><option>planejada</option><option>prompt aprovado</option><option>storyboard pronto</option><option>take gerado</option><option>revisar</option><option>montado</option></select></div><div class="clip-scene-assets"><label class="field"><span>Prompt de video</span><textarea class="clip-scene-prompt" data-field="prompt" rows="4">${esc(s.prompt||"")}</textarea></label><label class="field"><span>Prompt de imagem/storyboard</span><textarea class="clip-image-prompt" data-field="imagePrompt" rows="4">${esc(s.imagePrompt||"")}</textarea></label><label class="field"><span>Link do take</span><input data-field="takeUrl" value="${attr(s.takeUrl||"")}" placeholder="URL do take gerado"></label><label class="field"><span>Notas do asset</span><input data-field="assetNotes" value="${attr(s.assetNotes||"")}" placeholder="versao, problema, ajuste"></label></div><textarea data-field="storyboard" rows="2" placeholder="Descricao do quadro de storyboard">${esc(s.storyboard||"")}</textarea><pre class="clip-prompt-preview">${esc(s.prompt||"")}</pre><div class="badge-row"><button class="small-action" type="button" data-action="remove">Remover cena</button></div>`;d.querySelector('select[data-field="status"]').value=s.status||"planejada";d.querySelectorAll("[data-field]").forEach(input=>input.addEventListener("input",()=>updateClipScene(s.id,input.dataset.field,input.value)));d.querySelector('[data-action="remove"]').addEventListener("click",()=>removeClipScene(s.id));els.clipScenesList.appendChild(d)})}
+function renderClip(){const w=getActiveWork();if(!w)return;els.clipChecklist.innerHTML=CLIP_ITEMS.map(i=>checkItem("clip",i,Boolean(w.clip.checklist[i]))).join("");els.clipChecklist.querySelectorAll("input").forEach(i=>i.addEventListener("change",()=>toggleClipItem(i.value)));els.clipScenesList.innerHTML=w.clip.scenes.length?"":'<div class="phrase-card"><p>Nenhuma cena criada. Gere um roteiro para transformar a letra em takes curtos.</p></div>';w.clip.scenes.forEach(s=>{const d=document.createElement("div");d.className="clip-scene-card";d.innerHTML=`<div class="clip-scene-grid"><input data-field="part" value="${attr(s.part)}" placeholder="Parte"><input data-field="duration" value="${attr(s.duration)}" placeholder="6s"><input data-field="shot" value="${attr(s.shot)}" placeholder="Plano/camera"><select data-field="status"><option>planejada</option><option>prompt aprovado</option><option>storyboard pronto</option><option>take gerado</option><option>revisar</option><option>montado</option></select></div><div class="clip-scene-assets"><label class="field"><span>Prompt de video</span><textarea class="clip-scene-prompt" data-field="prompt" rows="4">${esc(s.prompt||"")}</textarea></label><label class="field"><span>Prompt de imagem/storyboard</span><textarea class="clip-image-prompt" data-field="imagePrompt" rows="4">${esc(s.imagePrompt||"")}</textarea></label><label class="field"><span>Link do take</span><input data-field="takeUrl" value="${attr(s.takeUrl||"")}" placeholder="URL do take gerado"></label><label class="field"><span>Notas do asset</span><input data-field="assetNotes" value="${attr(s.assetNotes||"")}" placeholder="versao, problema, ajuste"></label>
+<label class="field"><span>📸 Foto da cena (aparece no clipe)</span>
+<input type="file" accept="image/*" class="clip-scene-photo-input" data-scene-id="${s.id}" style="font-size:12px">
+${s.imageUrl?`<img src="${s.imageUrl}" style="width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-top:4px;opacity:.8" alt="foto da cena">`:""}
+<input type="url" data-field="imageUrl" value="${attr(s.imageUrl||"")}" placeholder="ou cole URL de imagem/Pexels" style="margin-top:4px;font-size:12px">
+</label></div><textarea data-field="storyboard" rows="2" placeholder="Descricao do quadro de storyboard">${esc(s.storyboard||"")}</textarea><pre class="clip-prompt-preview">${esc(s.prompt||"")}</pre><div class="badge-row">
+  <button class="small-action" type="button" data-action="remove">Remover cena</button>
+  <button class="ghost-button" style="font-size:12px;padding:5px 10px" type="button" data-action="gerar-img">🎨 Gerar imagem</button>
+</div>`;d.querySelector('select[data-field="status"]').value=s.status||"planejada";d.querySelectorAll("[data-field]").forEach(input=>input.addEventListener("input",()=>updateClipScene(s.id,input.dataset.field,input.value)));d.querySelector('[data-action="remove"]').addEventListener("click",()=>removeClipScene(s.id));
+// Listener para gerar imagem da cena
+const btnGerarImg = d.querySelector('[data-action="gerar-img"]');
+if(btnGerarImg) btnGerarImg.addEventListener("click", () => gerarImagemCena(s.id, btnGerarImg));
+// Listener para upload de foto da cena
+const photoInput=d.querySelector('.clip-scene-photo-input');
+if(photoInput){
+  photoInput.addEventListener('change',e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      updateClipScene(s.id,'imageUrl',ev.target.result);
+      // Mostrar preview imediato
+      const existing=photoInput.parentElement.querySelector('img');
+      if(existing){existing.src=ev.target.result;}
+      else{
+        const img=document.createElement('img');
+        img.src=ev.target.result;
+        img.style.cssText='width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-top:4px;opacity:.8';
+        photoInput.parentElement.insertBefore(img,photoInput.nextSibling);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+els.clipScenesList.appendChild(d)})}
 function renderAudios(){const w=getActiveWork();els.audioList.innerHTML="";if(!w.audios.length){els.audioList.innerHTML='<div class="audio-chip"><span>Nenhum audio catalogado.</span></div>';return}w.audios.forEach(a=>{const div=document.createElement("div");div.className="audio-chip";const src=a.dataUrl||a.link;div.innerHTML=`<div class="audio-meta"><strong>${esc(a.name)}</strong><span class="badge">${esc(a.type)}</span></div>${src?`<audio controls src="${attr(src)}"></audio>`:"<p>Sem arquivo/link tocavel.</p>"}<button class="small-action" type="button">Remover</button>`;div.querySelector("button").addEventListener("click",()=>removeAudio(a.id));els.audioList.appendChild(div)})}
 function renderBlocks(){const w=getActiveWork();els.blocksList.innerHTML="";w.blocks.forEach(b=>{const div=document.createElement("div");div.className="block-card";div.innerHTML=`<input value="${attr(b.name)}"><textarea rows="3">${esc(b.notes||"")}</textarea><button class="small-action" type="button">Remover</button>`;const i=div.querySelector("input"),t=div.querySelector("textarea");i.addEventListener("input",()=>updateBlock(b.id,"name",i.value));t.addEventListener("input",()=>updateBlock(b.id,"notes",t.value));div.querySelector("button").addEventListener("click",()=>removeBlock(b.id));els.blocksList.appendChild(div)})}
 function renderVersions(){const w=getActiveWork();els.versionsList.innerHTML=w.versions.length?"":'<div class="phrase-card"><p>Nenhuma versao salva.</p></div>';w.versions.forEach(v=>{const d=document.createElement("div");d.className="version-card";d.innerHTML=`<div><strong>${esc(v.name)}</strong><p>${formatDate(v.at)} - ${esc(firstLine(v.lyrics)||"Sem trecho")}</p></div><button class="small-action" type="button">Restaurar</button>`;d.querySelector("button").addEventListener("click",()=>restoreVersion(v.id));els.versionsList.appendChild(d)})}
@@ -174,7 +717,7 @@ bindEvents();bindExportEvents();bindInternationalEvents();bindCommercialEvents()
    Suporta 184 idiomas / nações
    Chave pública gratuita: https://aistudio.google.com/app/apikey
 ════════════════════════════════════════════════════════════════ */
-const GEMINI_API_KEY = "AIzaSyDemoKeyReplaceWithYours"; // substitua pela chave gratuita
+const GEMINI_API_KEY = ""; // Chave gerenciada pelo servidor /api/translate // substitua pela chave gratuita
 const IDIOMAS_MUNDO = {
   "ingles":"English","espanhol":"Spanish","frances":"French",
   "italiano":"Italian","alemao":"German","japones":"Japanese",
@@ -200,34 +743,7 @@ const IDIOMAS_MUNDO = {
   "tcheco":"Czech","ucraniano":"Ukrainian","bielorrusso":"Belarusian",
   "catalão":"Catalan","galego":"Galician","basco":"Basque",
   "islandês":"Icelandic","irlandês":"Irish","galês":"Welsh",
-  "escocês":"Scottish Gaelic","maltês":"Maltese",^"esperanto^":"Esperanto^",,"portugues europeu":"European Portuguese","espanhol espanha":"Spanish (Spain)","frances canadense":"Canadian French",
-  "creole haitiano":"Haitian Creole","guarani":"Guarani","quechua":"Quechua",
-  "aramaico":"Aramaic","curdo":"Kurdish","pashto":"Pashto","dari":"Dari",
-  "zulu":"Zulu","xhosa":"Xhosa","shona":"Shona","somali":"Somali","wolof":"Wolof",
-  "bambara":"Bambara","luganda":"Luganda","kinyarwanda":"Kinyarwanda","lingala":"Lingala",
-  "igbo":"Igbo","afrikaans":"Afrikaans","malgaxe":"Malagasy",
-  "maori":"Māori","samoano":"Samoan","tonganês":"Tongan","havaiano":"Hawaiian","fijiano":"Fijian",
-  "tigrínia":"Tigrinya","oromo":"Oromo","twi":"Twi","ewe":"Ewe","fon":"Fon",
-  "tswana":"Tswana","sotho do sul":"Sesotho","ndebele":"Ndebele","tsonga":"Tsonga","venda":"Venda",
-  "kongo":"Kongo","bemba":"Bemba","chichewa":"Chichewa","kirundi":"Kirundi",
-  "fulani":"Fula","mandinka":"Mandinka","dioula":"Dyula","tamazight":"Tamazight",
-  "sindhi":"Sindhi","odia":"Odia","assames":"Assamese","maithili":"Maithili",
-  "concani":"Konkani","manipuri":"Meitei","kashmiri":"Kashmiri","uyghur":"Uyghur",
-  "quirguiz":"Kyrgyz","tadjique":"Tajik","turcomeno":"Turkmen","baluchi":"Balochi",
-  "dzongkha":"Dzongkha","bhojpuri":"Bhojpuri","siríaco":"Syriac","sorani":"Sorani Kurdish",
-  "cantonês":"Cantonese","hakka":"Hakka","sundanês":"Sundanese",
-  "luxemburgues":"Luxembourgish","romanche":"Romansh","occitano":"Occitan","bretão":"Breton",
-  "corso":"Corsican","sardo":"Sardinian","asturiano":"Asturian","ladino":"Ladino",
-  "yiddish":"Yiddish","romani":"Romani","sami do norte":"Northern Sami","feroês":"Faroese",
-  "friulano":"Friulian","aragonês":"Aragonese",
-  "nahuatl":"Nahuatl","maya yucateco":"Yucatec Maya","aymara":"Aymara","mapuche":"Mapuche",
-  "kiche":"K'iche'","wayuu":"Wayuu",
-  "tok pisin":"Tok Pisin","bislama":"Bislama","chamorro":"Chamorro","tahitiano":"Tahitian",
-  "papiamento":"Papiamentu","creole jamaicano":"Jamaican Patois",
-  "crioulo cabo-verdiano":"Cape Verdean Creole","seselwa":"Seychellois Creole",
-  "kreol mauriciano":"Mauritian Creole","sranan tongo":"Sranan Tongo","guarifuna":"Garifuna",
-  "arabê marroquino":"Moroccan Arabic","arabê egípcio":"Egyptian Arabic",
-  "interlingua":"Interlingua",
+  "escocês":"Scottish Gaelic","maltês":"Maltese","esperanto":"Esperanto",
   "outro":"English"
 };
 const MODOS_DESCRICAO = {
@@ -238,61 +754,29 @@ const MODOS_DESCRICAO = {
   commercial:"commercial and catchy, suitable for radio hits"
 };
 async function translateWithGemini(lyrics,lang,mode,market,title){
-  const targetLang = IDIOMAS_MUNDO[lang] || lang;
-  const modeDesc = MODOS_DESCRICAO[mode] || "singable and natural";
-  const prompt = `You are a professional music translator and lyricist specializing in adapting songs for international markets.
-
-TASK: Translate and adapt the following song lyrics from Brazilian Portuguese to ${targetLang}.
-
-SONG TITLE: "${title}"
-TARGET MARKET: ${market}
-ADAPTATION MODE: ${modeDesc}
-
-RULES:
-1. Preserve the emotional meaning and soul of each line
-2. Keep the syllable count as close as possible (very important for singing)
-3. Maintain rhyme scheme where the mode allows
-4. Use natural, conversational ${targetLang} that feels authentic — not literal translation
-5. Adapt cultural references to resonate with ${market} audience
-6. Keep the same song structure (verses, chorus, bridge)
-7. Return ONLY the translated lyrics, no explanations, no labels
-
-ORIGINAL LYRICS:
-${lyrics}
-
-TRANSLATED LYRICS (${targetLang}):`;
-
-  // Tentar Gemini primeiro (grátis)
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const res = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:2000}})});
-    if(res.ok){
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if(text && text.trim()) return text.trim();
+    const resp = await fetch('/api/translate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lyrics,targetLang:IDIOMAS_MUNDO[lang]||lang,mode,market,title})
+    });
+    if(resp.ok){
+      const data=await resp.json();
+      if(data.translated) return data.translated;
     }
-  } catch(e){ console.warn("Gemini indisponível, usando fallback"); }
-
-  // Fallback: MyMemory API (gratuita, sem chave, 1000 req/dia)
+  } catch(e){ console.warn('Endpoint indisponível, usando fallback MyMemory'); }
+  // Fallback: MyMemory direto
   try {
-    const lines = lyrics.split("\n").filter(l=>l.trim());
-    const translated = await Promise.all(lines.map(async line => {
-      if(!line.trim()) return "";
-      const langCode = {
-        "ingles":"en","espanhol":"es","frances":"fr","italiano":"it",
-        "alemao":"de","japones":"ja","coreano":"ko","arabe":"ar",
-        "hindi":"hi","mandarim":"zh","russo":"ru","turco":"tr",
-        "polones":"pl","holandes":"nl","sueco":"sv","grego":"el",
-        "hebraico":"he","thai":"th","vietnamita":"vi","indonesio":"id",
-        "swahili":"sw","bengali":"bn","urdu":"ur","persa":"fa",
-        "ucraniano":"uk","romeno":"ro","hungaro":"hu","tcheco":"cs",
-        "bulgaro":"bg","croata":"hr","eslovaco":"sk","outro":"en"
-      }[lang] || "en";
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(line)}&langpair=pt|${langCode}`;
-      const r = await fetch(url);
+    const langCodes={"ingles":"en","espanhol":"es","frances":"fr","italiano":"it","alemao":"de","japones":"ja","coreano":"ko","arabe":"ar","hindi":"hi","mandarim":"zh","russo":"ru","turco":"tr","polones":"pl","holandes":"nl","sueco":"sv","grego":"el","hebraico":"he","thai":"th","vietnamita":"vi","indonesio":"id","swahili":"sw","bengali":"bn","urdu":"ur","persa":"fa","ucraniano":"uk","romeno":"ro","hungaro":"hu","tcheco":"cs","bulgaro":"bg","croata":"hr","tagalog":"tl","malaio":"ms","noruegues":"no","dinamarques":"da","finlandes":"fi","outro":"en"};
+    const lc=langCodes[lang]||"en";
+    const lines=lyrics.split("\n").filter(l=>l.trim());
+    const translated=await Promise.all(lines.map(async line=>{
+      if(!line.trim())return"";
+      const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(line)}&langpair=pt|${lc}`);
       if(r.ok){const d=await r.json();return d.responseData?.translatedText||line;}
       return line;
     }));
     return translated.join("\n");
-  } catch(e){ throw new Error("Serviço de tradução temporariamente indisponível. Tente novamente."); }
+  } catch(e){ throw new Error("Serviço de tradução temporariamente indisponível."); }
 }
+

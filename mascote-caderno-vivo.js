@@ -347,25 +347,17 @@ REGRAS OBRIGATÓRIAS — siga sempre:
 8. Se não souber algo, seja honesto: "Não tenho essa informação, mas posso te ajudar com [tema do app ou música]".`;
 
     try {
-      const key = (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY && !GEMINI_API_KEY.includes('Demo')) ? GEMINI_API_KEY : null;
-      if (!key) {
-        esconderDigitando();
-        mostrarMensagem('⚙️ Para ativar o chat comigo, o admin precisa configurar a chave Gemini gratuita em aistudio.google.com/app/apikey e colocá-la no app.js.', [
-          { label: 'Entendi', acao: fecharBalao },
-        ], false);
-        return;
-      }
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-      const resp = await fetch(geminiUrl, {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          messages: [{ role: 'user', content: prompt }],
         }),
       });
       const data = await resp.json();
-      const resposta = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpa, não consegui responder agora. Tenta de novo!';
+      const resposta = data.content?.find(b => b.type === 'text')?.text || 'Desculpa, não consegui responder agora. Tenta de novo!';
       esconderDigitando();
       mostrarMensagem(resposta, [
         { label: 'Perguntar mais', acao: () => mostrarChat() },
