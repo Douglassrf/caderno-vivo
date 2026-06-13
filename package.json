@@ -1,0 +1,13 @@
+{
+  "name": "caderno-vivo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Caderno Vivo — Plataforma de composição musical profissional",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx vercel dev"
+  }
+}
