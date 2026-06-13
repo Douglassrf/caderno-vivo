@@ -1,1 +1,0 @@
-Captura textual: rota #/profissional renderiza ProfessionalSuite com Registro, ISRC, Distribuição, Licenciamento, Contratos, Analytics e Royalties.

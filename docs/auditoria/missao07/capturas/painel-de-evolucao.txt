@@ -1,1 +1,0 @@
-Captura textual: Missão 07 — Painel de Evolução renderiza módulo navegável com entregas obrigatórias e rota funcional.

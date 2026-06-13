@@ -1,1 +1,0 @@
-Captura textual: formulário permite adicionar Registro autoral, ISRC, Distribuição, Licenciamento, Contrato e Royalty.
