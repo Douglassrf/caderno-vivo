@@ -70,7 +70,7 @@ export default async function handler(req, res) {
 
   /* ── Chamar Gemini ── */
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const geminiResp = await fetch(url, {
       method: 'POST',
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
       id:         `msg_gemini_${Date.now()}`,
       type:       'message',
       role:       'assistant',
-      model:      'gemini-1.5-flash',
+      model:      'gemini-2.0-flash',
       stop_reason:'end_turn',
       content:    [{ type: 'text', text }],
     });
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
       id:         `msg_err_${Date.now()}`,
       type:       'message',
       role:       'assistant',
-      model:      'gemini-1.5-flash',
+      model:      'gemini-2.0-flash',
       stop_reason:'error',
       content:    [{
         type: 'text',
