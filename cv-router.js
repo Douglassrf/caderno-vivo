@@ -38,6 +38,10 @@
                            window.cvNav(card.dataset.room);
                  });
          });
+           document.querySelectorAll('[onclick*="cvNav("]').forEach(function (el) {
+                     var m = (el.getAttribute('onclick') || '').match(/cvNav\('([^']+)'\)/);
+                     if (m) { (function(v){ el.addEventListener('click', function(){ window.cvNav(v); }); })(m[1]); }
+           });
    });
 
 }());
