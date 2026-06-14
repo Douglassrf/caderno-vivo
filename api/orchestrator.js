@@ -3,7 +3,7 @@ ORQUESTRADOR — Caderno Vivo  |  api/orchestrator.js
 4 Camadas: 1=WebGPU local  2=Cache Supabase  3=Pool APIs  4=Fila n8n
 Variaveis Vercel: SUPABASE_URL, SUPABASE_SERVICE_KEY, N8N_WEBHOOK_URL, GROQ_API_KEY
 ================================================================ */
-const crypto = require('crypto');
+import { createHash, randomUUID } from 'crypto';
 const SUPABASE_URL=process.env.SUPABASE_URL, SUPABASE_SERVICE_KEY=process.env.SUPABASE_SERVICE_KEY, N8N_WEBHOOK_URL=process.env.N8N_WEBHOOK_URL, GROQ_API_KEY=process.env.GROQ_API_KEY;
 const CREDIT_COST={text:1,translation:1,mentor:2,image:2,storyboard:3,lyrics:5,audio:5,video:10};
 const TYPE_PROVIDERS={text:['groq','huggingface','together'],lyrics:['groq','together','huggingface'],translation:['groq','mymemory','huggingface'],mentor:['groq','together'],storyboard:['groq','together'],image:['pollinations','fal-ai','replicate','huggingface'],audio:['replicate','fal-ai','huggingface'],video:['fal-ai','replicate']};
@@ -18,7 +18,7 @@ export default async function handler(req,res){
   if(!type)return res.status(400).json({error:'Campo type obrigatorio.'});
   if(!payload)return res.status(400).json({error:'Campo payload obrigatorio.'});
   if(!TYPE_PROVIDERS[type])return res.status(400).json({error:'Tipo nao suportado.'});
-  const requestId=crypto.randomUUID(), startedAt=Date.now();
+  const requestId=randomUUID(), startedAt=Date.now();
   console.log('[orchestrator]['+requestId.slice(0,8)+'] inicio tipo='+type);
   /* CAMADA 2: Cache */
   if(!skipCache){const hit=await checkCache(type,payload);if(hit)return res.status(200).json({...hit,layer:2,cached:true,requestId,latencyMs:Date.now()-startedAt});}
@@ -53,9 +53,9 @@ async function saveCache(type,payload,result){
 function stableStringify(value){
   if(value===null||typeof value!=='object')return JSON.stringify(value);
   if(Array.isArray(value))return '['+value.map(stableStringify).join(',')+']';
-  return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+stableStringify(value[key])).join(',')+'}';
+  return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+stableStringify(value[key])).join(',')+'}'
 }
-function buildHash(type,payload){return crypto.createHash('sha256').update(stableStringify({type,payload})).digest('hex').slice(0,32);}
+function buildHash(type,payload){return createHash('sha256').update(stableStringify({type,payload})).digest('hex').slice(0,32);}
 
 /* ── CAMADA 3: Pool rotativo ── */
 async function getAvailableKey(provider){
@@ -67,14 +67,12 @@ async function getAvailableKey(provider){
   try{
     const resp=await sbFetch('/rest/v1/api_keys?provider=eq.'+provider+'&is_active=eq.true&select=id,api_key,requests_today,daily_limit&order=last_used.asc.nullsfirst&limit=1');
     if(!resp.ok){
-      /* DB indisponivel — fallback para env var */
       if(provider==='groq'&&GROQ_API_KEY)return{id:'env-groq',key:GROQ_API_KEY};
       if(provider==='pollinations')return{id:'pollinations-free',key:'free'};
       return null;
     }
     const rows=await resp.json();
     if(!rows.length){
-      /* Tabela vazia — fallback para env var */
       if(provider==='groq'&&GROQ_API_KEY)return{id:'env-groq',key:GROQ_API_KEY};
       if(provider==='pollinations')return{id:'pollinations-free',key:'free'};
       return null;
@@ -83,7 +81,6 @@ async function getAvailableKey(provider){
     if(row.daily_limit&&row.requests_today>=row.daily_limit)return null;
     return{id:row.id,key:row.api_key};
   }catch{
-    /* Excecao — fallback para env var */
     if(provider==='groq'&&GROQ_API_KEY)return{id:'env-groq',key:GROQ_API_KEY};
     if(provider==='pollinations')return{id:'pollinations-free',key:'free'};
     return null;
@@ -115,7 +112,7 @@ async function callTogether(type,payload,apiKey){const resp=await fetch('https:/
 async function callPollinations(payload){const{prompt,width=768,height=768,style='cinematic, professional'}=payload;const imageUrl='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt+', '+style)+'?width='+width+'&height='+height+'&nologo=true&model=flux&seed='+Date.now();const check=await fetch(imageUrl,{method:'HEAD',signal:AbortSignal.timeout(8000)});if(!check.ok)throw new Error('Pollinations HEAD '+check.status);return{imageUrl,provider:'pollinations'};}
 async function callFalAi(type,payload,apiKey){const endpoint=type==='video'?'https://fal.run/fal-ai/fast-svd/text-to-video':'https://fal.run/fal-ai/flux/schnell';const body=type==='video'?{prompt:payload.prompt,num_frames:14}:{prompt:payload.prompt,image_size:{width:payload.width??768,height:payload.height??768},num_inference_steps:4};const resp=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Key '+apiKey},body:JSON.stringify(body),signal:AbortSignal.timeout(60000)});if(!resp.ok)throw new Error('Fal.ai HTTP '+resp.status);const data=await resp.json();const url=data.images?.[0]?.url??data.video?.url;if(!url)throw new Error('Fal.ai sem URL');return type==='video'?{videoUrl:url,provider:'fal-ai'}:{imageUrl:url,provider:'fal-ai'};}
 async function callReplicate(type,payload,apiKey){const models={audio:'suno-ai/bark:b76242b40d67c76ab6742e987628a2a9ac019e11d56ab96c4e91ce03b79b2787',image:'black-forest-labs/flux-schnell',video:'stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438'};const version=models[type];if(!version)throw new Error('Replicate sem modelo para '+type);const input=type==='audio'?{prompt:payload.prompt??payload.text}:{prompt:payload.prompt,width:payload.width??768,height:payload.height??768};const cr=await fetch('https://api.replicate.com/v1/predictions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Token '+apiKey},body:JSON.stringify({version,input}),signal:AbortSignal.timeout(10000)});if(!cr.ok)throw new Error('Replicate create HTTP '+cr.status);const pred=await cr.json();for(let i=0;i<20;i++){await new Promise(r=>setTimeout(r,3000));const poll=await fetch(pred.urls.get,{headers:{'Authorization':'Token '+apiKey},signal:AbortSignal.timeout(8000)});const st=await poll.json();if(st.status==='succeeded'){const out=Array.isArray(st.output)?st.output[0]:st.output;const key=type==='audio'?'audioUrl':type==='video'?'videoUrl':'imageUrl';return{[key]:out,provider:'replicate'};}if(st.status==='failed')throw new Error('Replicate falhou: '+st.error);}throw new Error('Replicate timeout');}
-async function callMyMemory(payload){const{lyrics='',text='',targetLang='en'}=payload;const sourceText=String(lyrics||text||'').trim();if(!sourceText)throw new Error('MyMemory sem texto para traduzir');const langMap={ingles:'en',espanhol:'es',frances:'fr',italiano:'it',alemao:'de',japones:'ja',coreano:'ko'};const to=langMap[targetLang]??targetLang.slice(0,2);const resp=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(sourceText.slice(0,500))+'&langpair=pt|'+to,{signal:AbortSignal.timeout(8000)});if(!resp.ok)throw new Error('MyMemory HTTP '+resp.status);const data=await resp.json();const text=data.responseData?.translatedText;if(!text)throw new Error('MyMemory vazio');return{result:text,provider:'mymemory'};}
+async function callMyMemory(payload){const{lyrics='',text='',targetLang='en'}=payload;const sourceText=String(lyrics||text||'').trim();if(!sourceText)throw new Error('MyMemory sem texto para traduzir');const langMap={ingles:'en',espanhol:'es',frances:'fr',italiano:'it',alemao:'de',japones:'ja',coreano:'ko'};const to=langMap[targetLang]??targetLang.slice(0,2);const resp=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(sourceText.slice(0,500))+'&langpair=pt|'+to,{signal:AbortSignal.timeout(8000)});if(!resp.ok)throw new Error('MyMemory HTTP '+resp.status);const data=await resp.json();const t=data.responseData?.translatedText;if(!t)throw new Error('MyMemory vazio');return{result:t,provider:'mymemory'};}
 
 /* ── Prompts ── */
 function buildPrompt(type,p){
