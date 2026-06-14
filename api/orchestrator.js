@@ -3,7 +3,7 @@ ORQUESTRADOR — Caderno Vivo  |  api/orchestrator.js
 4 Camadas: 1=WebGPU local  2=Cache Supabase  3=Pool APIs  4=Fila n8n
 Variaveis Vercel: SUPABASE_URL, SUPABASE_SERVICE_KEY, N8N_WEBHOOK_URL, GROQ_API_KEY
 ================================================================ */
-import crypto from 'crypto';
+const crypto = require('crypto');
 const SUPABASE_URL=process.env.SUPABASE_URL, SUPABASE_SERVICE_KEY=process.env.SUPABASE_SERVICE_KEY, N8N_WEBHOOK_URL=process.env.N8N_WEBHOOK_URL, GROQ_API_KEY=process.env.GROQ_API_KEY;
 const CREDIT_COST={text:1,translation:1,mentor:2,image:2,storyboard:3,lyrics:5,audio:5,video:10};
 const TYPE_PROVIDERS={text:['groq','huggingface','together'],lyrics:['groq','together','huggingface'],translation:['groq','mymemory','huggingface'],mentor:['groq','together'],storyboard:['groq','together'],image:['pollinations','fal-ai','replicate','huggingface'],audio:['replicate','fal-ai','huggingface'],video:['fal-ai','replicate']};
