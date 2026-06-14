@@ -26,6 +26,10 @@ export default async function handler(req, res) {
   if (!type)    return res.status(400).json({ error: 'Campo "type" obrigatorio.' });
   if (!payload) return res.status(400).json({ error: 'Campo "payload" obrigatorio.' });
 
+  if (!Object.prototype.hasOwnProperty.call(CREDIT_COST, type)) {
+    return res.status(400).json({ error: `Tipo não suportado: ${type}` });
+  }
+
   try {
     if (type === 'image') return await handleImage(res, payload);
     return await handleText(res, type, payload);
