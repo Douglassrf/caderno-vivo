@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   }
 
   /* ── Ler a chave do ambiente — nunca exposta ── */
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     return res.status(500).json({ error: 'Chave do Gemini não configurada no servidor.' });
   }

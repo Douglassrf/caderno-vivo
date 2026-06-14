@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   }
 
   /* ── Única chave necessária: Google Gemini ── */
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     console.error('[claude-proxy] GEMINI_API_KEY não configurada.');
     return res.status(200).json({
