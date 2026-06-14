@@ -18,9 +18,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
-  const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'Chave do Gemini não configurada no servidor.' });
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) {
+    return res.status(500).json({ error: 'Chave do Groq não configurada no servidor.' });
   }
 
   const { tipo, dados } = req.body;
@@ -168,29 +168,35 @@ Responda de forma direta e prática. Máximo 3 parágrafos.`;
     return res.status(400).json({ error: `Tipo desconhecido: ${tipo}` });
   }
 
-  /* ── Chamar Gemini ── */
+  /* ── Chamar Groq ── */
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const geminiResp = await fetch(url, {
+    const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.75, maxOutputTokens: 2000 },
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.75,
+        max_tokens: 2000,
       }),
     });
 
-    if (!geminiResp.ok) {
-      throw new Error(`Gemini error ${geminiResp.status}`);
+    if (!groqResp.ok) {
+      throw new Error(`Groq error ${groqResp.status}`);
     }
 
-    const data = await geminiResp.json();
-    const resultado = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const data = await groqResp.json();
+    const resultado = data.choices?.[0]?.message?.content?.trim();
 
-    if (!resultado) throw new Error('Resposta vazia do Gemini.');
+    if (!resultado) throw new Error('Resposta vazia do Groq.');
 
-    return res.status(200).json({ resultado });
+    return res.status(200).json({
+      content: [{ type: 'text', text: resultado }],
+      resultado,
+    });
 
   } catch (error) {
     console.error(`Erro no Maestro IA (${tipo}):`, error.message);

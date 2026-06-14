@@ -2,12 +2,12 @@
    ENDPOINT SERVERLESS — Caderno Vivo
    Arquivo: api/translate.js
 
-   A chave do Gemini fica NO SERVIDOR (Vercel Environment Variables).
+   A chave do Groq fica NO SERVIDOR (Vercel Environment Variables).
    O navegador NUNCA vê a chave — zero exposição.
 
    Como funciona:
    1. O app.js chama POST /api/translate com o texto e idioma
-   2. Este arquivo recebe, chama o Gemini com a chave segura
+   2. Este arquivo recebe, chama o Groq com a chave segura
    3. Devolve só a tradução — a chave nunca sai do servidor
 ================================================================ */
 
@@ -27,9 +27,9 @@ export default async function handler(req, res) {
   }
 
   /* ── Ler a chave do ambiente — nunca exposta ── */
-  const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'Chave do Gemini não configurada no servidor.' });
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) {
+    return res.status(500).json({ error: 'Chave do Groq não configurada no servidor.' });
   }
 
   /* ── Receber dados do app.js ── */
@@ -73,30 +73,36 @@ ${lyrics}
 TRANSLATED LYRICS (${targetLang}):`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const geminiResp = await fetch(url, {
+    const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
 
-    if (!geminiResp.ok) {
-      const err = await geminiResp.text();
-      throw new Error(`Gemini error ${geminiResp.status}: ${err}`);
+    if (!groqResp.ok) {
+      const err = await groqResp.text();
+      throw new Error(`Groq error ${groqResp.status}: ${err}`);
     }
 
-    const data = await geminiResp.json();
-    const translated = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const data = await groqResp.json();
+    const translated = data.choices?.[0]?.message?.content?.trim();
 
     if (!translated) {
-      throw new Error('Gemini retornou resposta vazia.');
+      throw new Error('Groq retornou resposta vazia.');
     }
 
-    return res.status(200).json({ translated });
+    return res.status(200).json({
+      content: [{ type: 'text', text: translated }],
+      translated,
+    });
 
   } catch (error) {
     console.error('Erro na tradução:', error.message);
@@ -130,8 +136,10 @@ TRANSLATED LYRICS (${targetLang}):`;
         return line;
       }));
 
+      const fallbackText = translated.join('\n');
       return res.status(200).json({
-        translated: translated.join('\n'),
+        content: [{ type: 'text', text: fallbackText }],
+        translated: fallbackText,
         fallback: true,
       });
 
