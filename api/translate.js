@@ -26,11 +26,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  /* ── Ler a chave do ambiente — nunca exposta ── */
+  /* ── Ler a chave do ambiente — nunca exposta.
+     Se não existir, o endpoint ainda funciona pelo fallback MyMemory. ── */
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
-  if (!GROQ_API_KEY) {
-    return res.status(500).json({ error: 'Chave do Groq não configurada no servidor.' });
-  }
 
   /* ── Receber dados do app.js ── */
   const { lyrics, targetLang, mode, market, title } = req.body;
@@ -73,6 +71,10 @@ ${lyrics}
 TRANSLATED LYRICS (${targetLang}):`;
 
   try {
+    if (!GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY não configurada; usando fallback MyMemory.');
+    }
+
     const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
