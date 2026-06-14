@@ -35,12 +35,26 @@
 }
 
 /* ── Reset for new shell ── */
-body { margin:0; padding:0; background:var(--cv-bg); color:var(--cv-text);
+html { background:var(--cv-bg); }
+body { margin:0; padding:0; background:transparent; color:var(--cv-text);
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  overflow:hidden; height:100vh; }
+  overflow:hidden; height:100vh; position:relative; }
+
+#cv-starfield {
+  position:fixed; inset:0; width:100vw; height:100vh; z-index:-1;
+  pointer-events:none; background:var(--cv-bg);
+}
+
+body::before {
+  content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(circle at 18% 22%, rgba(6,182,212,.12), transparent 30%),
+             radial-gradient(circle at 82% 18%, rgba(124,58,237,.15), transparent 34%),
+             radial-gradient(circle at 55% 78%, rgba(168,85,247,.10), transparent 36%);
+}
+
 
 /* ── App Shell ── */
-.cv-shell { display:flex; height:100vh; width:100vw; overflow:hidden; }
+.cv-shell { display:flex; height:100vh; width:100vw; overflow:hidden; position:relative; z-index:0; }
 
 /* ============================================================
    SIDEBAR / NAV
@@ -133,7 +147,7 @@ body { margin:0; padding:0; background:var(--cv-bg); color:var(--cv-text);
    MAIN CONTENT AREA
    ============================================================ */
 .cv-main { flex:1; display:flex; flex-direction:column; overflow:hidden;
-  background:var(--cv-bg); min-width:0; }
+  background:transparent; min-width:0; }
 
 /* ── Views ── */
 .cv-view { display:none; flex:1; flex-direction:column; overflow:hidden; }
@@ -456,6 +470,7 @@ body { margin:0; padding:0; background:var(--cv-bg); color:var(--cv-text);
 </style>
 </head>
 <body>
+<canvas id="cv-starfield" aria-hidden="true"></canvas>
 <div class="cv-shell">
 
   <!-- ================================================
@@ -1090,6 +1105,110 @@ body { margin:0; padding:0; background:var(--cv-bg); color:var(--cv-text);
 
   </main><!-- /cv-main -->
 </div><!-- /cv-shell -->
+
+
+<script>
+(function(){
+  var canvas = document.getElementById('cv-starfield');
+  if(!canvas || !canvas.getContext) return;
+
+  var ctx = canvas.getContext('2d');
+  var stars = [];
+  var width = 0;
+  var height = 0;
+  var dpr = 1;
+  var STAR_COUNT = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : 240;
+  var lastTime = 0;
+
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+
+  function makeStar(){
+    var glow = Math.random() > 0.72;
+    var hue = Math.random() > 0.5 ? '103,232,249' : '168,85,247';
+    return {
+      x: rand(0, width),
+      y: rand(0, height),
+      z: rand(0.25, 1),
+      r: rand(0.45, 1.9),
+      base: rand(0.25, 0.9),
+      twinkle: rand(0.7, 2.8),
+      phase: rand(0, Math.PI * 2),
+      driftX: rand(-0.012, 0.026),
+      driftY: rand(0.006, 0.035),
+      glow: glow,
+      color: glow ? hue : '226,226,239'
+    };
+  }
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stars = Array.from({ length: STAR_COUNT }, makeStar);
+  }
+
+  function drawNebula(time){
+    var pulse = 0.5 + Math.sin(time * 0.00018) * 0.08;
+    var g1 = ctx.createRadialGradient(width * 0.18, height * 0.26, 0, width * 0.18, height * 0.26, Math.max(width, height) * 0.55);
+    g1.addColorStop(0, 'rgba(6,182,212,' + (0.075 + pulse * 0.035) + ')');
+    g1.addColorStop(0.42, 'rgba(59,130,246,0.035)');
+    g1.addColorStop(1, 'rgba(6,182,212,0)');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, width, height);
+
+    var g2 = ctx.createRadialGradient(width * 0.78, height * 0.18, 0, width * 0.78, height * 0.18, Math.max(width, height) * 0.6);
+    g2.addColorStop(0, 'rgba(168,85,247,0.13)');
+    g2.addColorStop(0.5, 'rgba(124,58,237,0.045)');
+    g2.addColorStop(1, 'rgba(124,58,237,0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  function animate(time){
+    var delta = Math.min(time - (lastTime || time), 34);
+    lastTime = time;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#09090f';
+    ctx.fillRect(0, 0, width, height);
+    drawNebula(time);
+
+    for(var i = 0; i < stars.length; i++){
+      var s = stars[i];
+      s.x += s.driftX * delta * s.z;
+      s.y += s.driftY * delta * s.z;
+      if(s.x > width + 8) s.x = -8;
+      if(s.x < -8) s.x = width + 8;
+      if(s.y > height + 8) s.y = -8;
+
+      var alpha = Math.max(0.12, Math.min(1, s.base + Math.sin(time * 0.001 * s.twinkle + s.phase) * 0.28));
+      var radius = s.r * (0.7 + s.z * 0.75);
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(' + s.color + ',' + alpha + ')';
+      ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      if(s.glow){
+        var glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, radius * 7);
+        glow.addColorStop(0, 'rgba(' + s.color + ',' + (alpha * 0.22) + ')');
+        glow.addColorStop(1, 'rgba(' + s.color + ',0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(s.x - radius * 7, s.y - radius * 7, radius * 14, radius * 14);
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  resize();
+  window.addEventListener('resize', resize, { passive:true });
+  requestAnimationFrame(animate);
+})();
+</script>
 
 <!-- ============================================================
      NAVEGAÇÃO
