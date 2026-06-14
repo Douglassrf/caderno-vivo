@@ -4,7 +4,7 @@
 
     /* Move todas as cv-views para serem irmas diretas de cv-main */
       function flattenViews() {
-          var main = document.getElementById('cv-main');
+          var main = document.cv-router.js?v=2">querySelector('.cv-main');
               if (!main) return;
                   document.querySelectorAll('.cv-view').forEach(function (v) {
                         if (v.parentElement !== main) {
