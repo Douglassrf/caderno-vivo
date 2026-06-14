@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://image.pollinations.ai https://*.r2.dev; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.mymemory.translated.net https://image.pollinations.ai https://api-inference.huggingface.co https://pub-caderno-vivo.r2.dev; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
   <title>Caderno Vivo</title>
-  <link rel="stylesheet" href="styles.css?v=20260603-secure">
+  <link rel="stylesheet" href="styles.css?v=20260614-futuristic">
 </head>
 <body>
+  <div class="starfield" aria-hidden="true"></div>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-mark">CV</span><div><h1>Caderno Vivo</h1><p>Fases 1 a 9 + internacionalizacao</p></div></div>
@@ -22,6 +23,11 @@
       <section class="sidebar-card"><h2>Fonte oficial</h2><p>Fases 1 a 9 concluidas, com adaptacao internacional, Plus, videoclipe internacional e Prime em auditoria final.</p></section>
     </aside>
     <main class="workspace">
+      <section class="hero-banner" aria-label="Caderno Vivo">
+        <p class="hero-kicker">Futuristic creative studio</p>
+        <h1 class="hero-title">Caderno Vivo</h1>
+        <div class="hero-orbit" aria-hidden="true"></div>
+      </section>
       <header class="topbar"><div><p class="eyebrow">Caderno Vivo</p><h2>Criacao, memoria, protecao, mentor, repertorio, lancamento, videoclipe e exportacao final.</h2></div><div class="topbar-actions"><input id="searchInput" class="search" type="search" placeholder="Buscar obra, tag ou letra"><button id="quickCaptureButton" class="ghost-button" type="button">Captura rapida</button><button id="exportBackupButton" class="ghost-button" type="button">Exportar backup</button><button id="importBackupButton" class="ghost-button" type="button">Importar</button><input id="importFileInput" class="hidden" type="file" accept="application/json"></div></header>
       <section class="board"><div class="metric"><span id="totalWorks">0</span><p>obras</p></div><div class="metric"><span id="totalPhrases">0</span><p>frases</p></div><div class="metric"><span id="totalVersions">0</span><p>versoes</p></div><div class="metric"><span id="totalAudios">0</span><p>audios</p></div><div class="metric"><span id="totalDossiers">0</span><p>dossies</p></div><div class="metric"><span id="totalMentor">0</span><p>sugestoes IA</p></div><div class="metric"><span id="totalProductionReady">0</span><p>em producao</p></div><div class="metric"><span id="totalLaunchReady">0</span><p>lancamentos</p></div><div class="metric"><span id="totalClipPlans">0</span><p>videoclipes</p></div><div class="metric"><span id="totalRenderedClips">0</span><p>renderizados</p></div></section>
       <div class="content-grid">
