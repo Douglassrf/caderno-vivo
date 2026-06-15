@@ -669,6 +669,44 @@
      API PÚBLICA
   ════════════════════════════════════════════════════════════ */
 
+  const CV_STORAGE_KEY = 'caderno-vivo-state-v5';
+
+  function getState() {
+    try {
+      return JSON.parse(localStorage.getItem(CV_STORAGE_KEY) || '{}') || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(CV_STORAGE_KEY, JSON.stringify(state || {}));
+    dispatch('cv:state-changed', { state: state || {} });
+    return state || {};
+  }
+
+  function setState(patch) {
+    const current = getState();
+    const next = Object.assign({}, current, patch || {});
+    return saveState(next);
+  }
+
+  function dispatch(name, detail) {
+    document.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+  }
+
+  function salvarObra(obra) {
+    const state = getState();
+    state.works = Array.isArray(state.works) ? state.works : [];
+    const item = Object.assign({ id: `obra-${Date.now()}`, createdAt: Date.now() }, obra || {}, { updatedAt: Date.now() });
+    const idx = state.works.findIndex(w => w && w.id === item.id);
+    if (idx >= 0) state.works[idx] = item;
+    else state.works.unshift(item);
+    saveState(state);
+    dispatch('cv:obra-salva', { obra: item, state });
+    return item;
+  }
+
   window.CVEngine = {
     // Stems
     tocarInstrumental,
@@ -691,7 +729,16 @@
     registrarCompraAvulsa,
     getGastoAvulsoMes,
     verificarOportunidadeUpgrade,
+
+    // Estado modular padrão PR #10
+    init,
+    getState,
+    setState,
+    saveState,
+    dispatch,
+    salvarObra,
   };
+  window.CvEngine = window.CVEngine;
 
   /* ════════════════════════════════════════════════════════════
      INICIALIZAR
