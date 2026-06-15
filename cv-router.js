@@ -24,6 +24,8 @@
          document.querySelectorAll('[data-view]').forEach(function (btn) {
                  btn.classList.toggle('active', btn.dataset.view === view);
          });
+         var viewId = target ? target.id : 'cv-' + view;
+         document.dispatchEvent(new CustomEvent('cv:navigate', { detail: { to: viewId } }));
    };
 
    document.addEventListener('DOMContentLoaded', function () {
