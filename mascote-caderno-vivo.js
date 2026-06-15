@@ -448,7 +448,37 @@ REGRAS OBRIGATÓRIAS — siga sempre:
   }
 
   /* ---- INICIALIZAR ---- */
+  const MENSAGENS_SALA = {
+    'cv-home': '🏠 Bem-vindo ao Caderno Vivo! Escolha uma sala para começar sua criação.',
+    'cv-escritorio': '✍️ Escritório aberto: organize suas obras, frases e versões com calma.',
+    'cv-criar': '🎼 Criar Música: traga uma inspiração e eu fico por perto enquanto a IA compõe.',
+    'cv-maestro': '🎙️ Maestro AI: peça rimas, refrões, acordes ou uma revisão da letra.',
+    'cv-obras': '📚 Minhas Obras: seu catálogo vivo fica mais forte a cada música salva.',
+    'cv-internacional': '🌍 Internacional: adapte sua letra para outros idiomas sem perder emoção.',
+    'cv-cinema': '🎬 Cinema Musical: transforme a canção em cenas, planos e storyboard.',
+    'cv-carreira': '🚀 Carreira do Artista: acompanhe XP, metas e conquistas do seu caminho musical.'
+  };
+
+  function falar(texto, acoes, mostrarChat) {
+    if (!document.getElementById('cv-mascote')) init();
+    mostrarMensagem(texto, acoes || [{ label: 'Valeu, Dó!', primary: true, acao: fecharBalao }], !!mostrarChat);
+  }
+
+  function animar() {
+    const avatar = document.getElementById('cv-avatar');
+    if (!avatar) return;
+    avatar.classList.add('pulsar');
+    setTimeout(() => avatar.classList.remove('pulsar'), 1600);
+  }
+
+  function seguirSala(sala) {
+    const msg = MENSAGENS_SALA[sala] || '🎵 Estou por aqui para ajudar em qualquer sala do Caderno Vivo.';
+    animar();
+    falar(msg);
+  }
+
   function init() {
+    if (document.getElementById('cv-mascote')) return;
     criarMascote();
     bindEventos();
     agendarDicaIdle();
@@ -467,4 +497,10 @@ REGRAS OBRIGATÓRIAS — siga sempre:
   } else {
     init();
   }
+
+  document.addEventListener('cv:navigate', function(e) {
+    if (e && e.detail && e.detail.to) seguirSala(e.detail.to);
+  });
+
+  window.MascoteCaderno = { init, falar, animar, seguirSala };
 })();
