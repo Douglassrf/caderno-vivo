@@ -15,7 +15,7 @@ ok('destino internacional possui 70+ idiomas', ((html.match(/id="targetLanguageI
 const app=fs.readFileSync('app.js','utf8').replace(/^\uFEFF/,'');
 const elsBlock=(app.match(/const els=\{([\s\S]*?)\};/)||[])[1]||'';
 [...elsBlock.matchAll(/:\$\("#([^"]+)"\)/g)].forEach(m=>ok(`elemento referenciado existe:${m[1]}`,ids.has(m[1])));
-for (const file of ['app.js','cv-engine.js','maestro.js','api/claude-proxy.js','api/translate.js','api/maestro.js','api/hybrid-router.js','api/orchestrator.js']) {
+for (const file of ['app.js','cv-engine.js','api/claude-proxy.js','api/translate.js','api/maestro.js','api/hybrid-router.js','api/orchestrator.js']) {
   const result = spawnSync(process.execPath, ['--check', file], {encoding:'utf8'});
   ok(`syntax:${file}${result.status ? ' '+(result.stderr || result.stdout).trim() : ''}`, result.status === 0);
 }
