@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Auditoria estática e testes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependências (se houver)
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install --no-audit --no-fund
+          else
+            echo "Sem package.json, pulando instalação."
+          fi
+
+      - name: Rodar auditoria estática do projeto
+        run: node tools/audit.mjs
+
+      - name: Checar sintaxe de todos os arquivos JS
+        run: |
+          status=0
+          for f in $(git ls-files '*.js'); do
+            node --check "$f" || status=1
+          done
+          exit $status
