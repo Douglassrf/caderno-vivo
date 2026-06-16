@@ -10,6 +10,11 @@ function toast(msg,tipo){tipo=tipo||'info';var cores={info:{bg:'#1e293b',border:
 window.cvToast=toast;
 function emBreve(n){toast('"'+n+'" em desenvolvimento!','aviso');}
 var SK='caderno-vivo-state-v5';
+/* IDs de botoes ja controlados de verdade por app.js (els{} + bindExportEvents + listeners diretos).
+   wire() nunca deve religar esses elementos por texto -- isso causava handlers fantasma
+   disparando junto com a acao real (ex: clicar em "Renderizar video" executava o render
+   de verdade E mostrava um toast de "em desenvolvimento" ao mesmo tempo). */
+var APP_MANAGED_IDS=new Set(['newWorkButton','emptyNewWorkButton','quickCaptureButton','exportBackupButton','importBackupButton','importFileInput','searchInput','markProductionActionButton','markReleaseActionButton','generateClipPlanButton','generateStoryboardButton','exportClipScriptButton','exportClipPromptsButton','markClipActionButton','addClipSceneButton','reviveButton','saveVersionButton','exportWorkButton','deleteWorkButton','addAudioButton','addBlockButton','compareButton','startSessionButton','addAuthorButton','generateDossierButton','exportDossierButton','generateMentorButton','applyMentorButton','addPhraseButton','renderClipButton','downloadRenderedClipButton','convertMp4Button','downloadMp4Button','downloadPublishPackButton','generateInternationalButton','saveInternationalButton','plusOfferButton','generateInternationalClipButton','primeOfferButton','acceptAwarenessButton','acceptRevenueShareButton']);
 function getState(){try{return JSON.parse(localStorage.getItem(SK)||'null')||{works:[],activeWorkId:null};}catch(_){return{works:[],activeWorkId:null};}}
 function saveState(s){try{localStorage.setItem(SK,JSON.stringify(s));}catch(_){}}
 function getActiveWork(){var s=getState();return s.works&&s.activeWorkId?s.works.find(function(w){return w.id===s.activeWorkId;})||s.works[0]:(s.works&&s.works[0]);}
@@ -32,7 +37,7 @@ function registrarCampanha(){var nome=prompt('Nome da campanha:');if(!nome)retur
 function adicionarAutor(){var nome=prompt('Nome do co-autor:');if(!nome)return;var state=getState();var obra=getActiveWork();if(obra){obra.autores=obra.autores||[];obra.autores.push({nome:nome,em:new Date().toISOString()});var idx=state.works.findIndex(function(w){return w.id===obra.id;});if(idx>=0)state.works[idx]=obra;saveState(state);toast('Co-autor adicionado!','ok');}else{toast('Selecione uma obra.','aviso');}}
 function filtrarObras(status){document.querySelectorAll('#cv-escritorio .work-card,[data-status]').forEach(function(card){var cs=card.dataset.status||'todos';card.style.display=(status==='todos'||cs===status)?'':'none';});toast('Filtro: '+status,'info');}
 function byText(scope,txt){return Array.from(scope.querySelectorAll('button,[role="button"]')).filter(function(b){return b.textContent.trim().toLowerCase().indexOf(txt.toLowerCase())>=0;});}
-function wire(viewId,handlers){var view=document.getElementById(viewId);if(!view)return;handlers.forEach(function(h){byText(view,h.label).forEach(function(btn){if(btn._cvWired)return;if(!btn.getAttribute('onclick')||btn.getAttribute('onclick')===''){btn.addEventListener('click',h.fn);btn._cvWired=true;}});});}
+function wire(viewId,handlers){var view=document.getElementById(viewId);if(!view)return;handlers.forEach(function(h){byText(view,h.label).forEach(function(btn){if(btn._cvWired)return;if(btn.id&&APP_MANAGED_IDS.has(btn.id))return;if(!btn.getAttribute('onclick')||btn.getAttribute('onclick')===''){btn.addEventListener('click',h.fn);btn._cvWired=true;}});});}
 function wireAllButtons(){
 wire('cv-home',[
 {label:'Ignorar por agora',fn:ignorarMaestro},
