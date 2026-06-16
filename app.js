@@ -757,11 +757,11 @@ async function translateWithGroq(lyrics,lang,mode,market,title){
     const resp = await fetch('/api/translate',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({lyrics,targetLang:IDIOMAS_MUNDO[lang]||lang,mode,market,title})
+      body:JSON.stringify({text:lyrics,targetLanguage:IDIOMAS_MUNDO[lang]||lang,sourceLanguage:'português do Brasil',style:mode})
     });
     if(resp.ok){
       const data=await resp.json();
-      if(data.translated||data.content?.[0]?.text) return data.translated||data.content[0].text;
+      if(data.translation) return data.translation;
     }
   } catch(e){ console.warn('Endpoint indisponível, usando fallback MyMemory'); }
   // Fallback: MyMemory direto
