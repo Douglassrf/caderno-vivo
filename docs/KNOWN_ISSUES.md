@@ -31,14 +31,22 @@ Nenhuma referência a "backvocal" (ou variações) foi encontrada em todo o repo
 Não é um bug — é uma funcionalidade que não existe no Caderno Vivo hoje, então não há
 nada para testar ou corrigir nesse item especificamente.
 
-## 3. Renderização local de vídeo (`renderFinalClip`, app.js) — risco latente não confirmado
+## 3. Renderização local de vídeo (`renderFinalClip`, app.js)
 
-Carrega imagens remotas (Pollinations/Fal.ai) num `<canvas>` com `crossOrigin="anonymous"`
-antes de gravar via `MediaRecorder`. Se o servidor de origem da imagem não enviar o
-header `Access-Control-Allow-Origin`, o canvas fica "tainted" e a gravação pode falhar
-silenciosamente. Não foi possível confirmar em runtime real (sem navegador/rede neste
-ambiente) — fica registrado como ponto de atenção para teste manual em produção, não
-como bug confirmado.
+Carrega imagens remotas num `<canvas>` com `crossOrigin="anonymous"` antes de gravar via
+`MediaRecorder`. Testado de verdade via `curl -I` (16/06/2026):
+
+- **Pollinations.ai (provedor principal/gratuito) — ✅ confirmado seguro.** Responde
+  `Access-Control-Allow-Origin: *`. O canvas NÃO fica tainted, a gravação funciona.
+- **Fal.ai (fallback opcional, só usado se `FAL_KEY` estiver configurada) — ⚠️ não
+  confirmado.** O endpoint de geração exige autenticação até para inspecionar headers;
+  não foi possível verificar CORS sem uma `FAL_KEY` real e uma URL de imagem gerada de
+  fato. Como é só o fallback secundário (Pollinations já cobre o caminho principal),
+  o risco real para o usuário é baixo, mas fica pendente de teste manual em produção
+  caso o Fal.ai chegue a ser configurado.
+
+Conclusão: o caminho realmente usado hoje (Pollinations) está confirmado funcional.
+Sem bug a corrigir aqui.
 
 ## 4. Idiomas experimentais na sala Internacional
 
