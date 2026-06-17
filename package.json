@@ -10,6 +10,7 @@
     "start": "npx serve .",
     "dev": "npx vercel dev",
     "check": "node tools/audit.mjs",
-    "audit": "node tools/audit.mjs"
+    "audit": "node tools/audit.mjs",
+    "audit:e2e": "node tools/audit-browser.mjs"
   }
 }
