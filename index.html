@@ -664,36 +664,7 @@ body::before {
                style="--room-color:#0891b2;--room-bg:rgba(8,145,178,.18);--room-gradient:linear-gradient(135deg,rgba(8,145,178,.4),rgba(6,116,140,.1))">
             <div class="cv-room-img">🌍<div class="cv-room-num" style="background:#0891b2">5</div></div>
             <div class="cv-room-name">Mundo Internacional</div>
-            <div class="cv-room-desc">+ de 70 idiomas<br>disponíveis</div>
-            <div class="cv-room-arrow">→</div>
-          </div>
-
-          <div class="cv-room" onclick="cvNav('cinema')"
-               style="--room-color:#be185d;--room-bg:rgba(190,24,93,.18);--room-gradient:linear-gradient(135deg,rgba(190,24,93,.4),rgba(157,23,77,.1))">
-            <div class="cv-room-img">🎬<div class="cv-room-num" style="background:#be185d">6</div></div>
-            <div class="cv-room-name">Cinema Musical</div>
-            <div class="cv-room-desc">Roteiro, storyboard<br>e clipe com IA</div>
-            <div class="cv-room-arrow">→</div>
-          </div>
-
-          <div class="cv-room" onclick="cvNav('carreira')"
-               style="--room-color:#b45309;--room-bg:rgba(180,83,9,.18);--room-gradient:linear-gradient(135deg,rgba(180,83,9,.4),rgba(146,64,14,.1))">
-            <div class="cv-room-img">🏆<div class="cv-room-num" style="background:#b45309">7</div></div>
-            <div class="cv-room-name">Carreira do Artista</div>
-            <div class="cv-room-desc">Nível 4 de 10<br>4 conquistas</div>
-            <div class="cv-room-arrow">→</div>
-          </div>
-
-        </div><!-- /cv-rooms -->
-
-        <!-- Bottom 3 cards -->
-        <div class="cv-bottom-grid">
-
-          <div class="cv-card">
-            <div class="cv-card-title">
-              💎 Cofre de Ideias
-              <span class="cv-card-link" onclick="cvNav('escritorio')">Ver tudo</spnacional</div>
-            <div class="cv-room-desc">+ de 70 idiomas<br>disponíveis</div>
+            <div class="cv-room-desc">172 idiomas<br>disponíveis</div>
             <div class="cv-room-arrow">→</div>
           </div>
 
@@ -874,10 +845,25 @@ body::before {
             <div class="cv-maestro-avatar" style="width:64px;height:64px;font-size:28px">🤖</div>
             <div>
               <div style="font-size:16px;font-weight:700;color:var(--cv-text);margin-bottom:4px">Maestro pronto para criar com você!</div>
-              <div style="font-size:13px;color:var(--cv-muted)">Abra uma obra no Escritório e use o Mentor Criativo para completar letras, melhorar refrões e analisar a métrica.</div>
+              <div style="font-size:13px;color:var(--cv-muted)">Converse abaixo ou abra uma obra no Escritório para usar o Mentor Criativo.</div>
             </div>
           </div>
         </div>
+        <section class="maestro-chat subpanel" style="max-width:720px;margin-bottom:20px">
+          <div id="maestro-log"></div>
+          <div id="maestro-quick" class="maestro-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">
+            <button type="button" class="ghost-button">rimas</button>
+            <button type="button" class="ghost-button">refrão</button>
+            <button type="button" class="ghost-button">acordes</button>
+            <button type="button" class="ghost-button">revisar letra</button>
+            <button type="button" class="ghost-button">abertura</button>
+          </div>
+          <label class="field full"><span>Converse com o Maestro</span>
+            <textarea id="maestro-input" rows="3" placeholder="Peça uma letra, rima, ponte, cifras ou revisão..."></textarea>
+          </label>
+          <p id="maestro-status" style="font-size:12px;color:var(--cv-muted);margin:8px 0">Enter envia · Shift+Enter quebra linha.</p>
+          <button id="maestro-send" class="primary-action compact" type="button">Enviar</button>
+        </section>
         <button onclick="cvNav('escritorio')" class="cv-btn-continuar" style="max-width:280px">✏️ Ir para o Escritório</button>
       </div>
     </div><!-- /cv-maestro -->
@@ -911,7 +897,7 @@ body::before {
     <div class="cv-view" id="cv-internacional">
       <div class="cv-view-head">
         <div class="cv-view-title">🌍 Mundo Internacional</div>
-        <div class="cv-view-sub">Adaptações cantáveis para qualquer idioma — mais de 70 idiomas disponíveis</div>
+        <div class="cv-view-sub">Adaptações cantáveis para qualquer idioma — 172 idiomas via /api/translate</div>
       </div>
       <div class="cv-view-body">
         <section class="subpanel international-panel">
@@ -925,16 +911,9 @@ body::before {
           </div>
           <div id="plusOfferBox" class="offer-box"><strong>Vocæ já imaginou sua música tocando em outro país, em outro idioma?</strong><p>Adquira o Plus para adaptar sua música para inglês, espanhol ou qualquer idioma do mundo sem perder emoção, métrica e rima.</p></div>
           <div class="form-grid international-grid">
-            <label class="field"><span>Origem</span><select id="sourceLanguageInput"><option>português do Brasil</option><option>inglês</option><option>espanhol</option><option>francês</option><option>italiano</option><option>alemão</option><option>japonês</option><option>coreano</option><option>árabe</option><option>hindi</option><option>mandarim</option><option>russo</option></select></label>
-            <label class="field"><span>Destino</span><select id="targetLanguageInput">
-              <optgroup label="── América ──"><option>inglês</option><option>espanhol</option><option>português do Brasil</option><option>português europeu</option><option>francês canadense</option><option>guarani</option><option>quechua</option><option>aimará</option><option>nahuatl</option><option>crioulo haitiano</option></optgroup>
-              <optgroup label="── Europa ──"><option>francês</option><option>alemão</option><option>italiano</option><option>holandês</option><option>sueco</option><option>norueguês</option><option>dinamarquês</option><option>finlandês</option><option>islandês</option><option>irlandês</option><option>galês</option><option>polonês</option><option>tcheco</option><option>eslovaco</option><option>húngaro</option><option>romeno</option><option>grego</option><option>ucraniano</option><option>russo</option><option>búlgaro</option><option>croata</option><option>sérvio</option><option>esloveno</option><option>catalão</option><option>basco</option></optgroup>
-              <optgroup label="── Ásia ──"><option>mandarim</option><option>cantonês</option><option>japonês</option><option>coreano</option><option>hindi</option><option>bengali</option><option>urdu</option><option>tâmil</option><option>telugu</option><option>marathi</option><option>punjabi</option><option>gujarati</option><option>nepalês</option><option>tailandês</option><option>vietnamita</option><option>indonésio</option><option>malaio</option><option>tagalog</option><option>birmanês</option><option>khmer</option><option>laosiano</option><option>persa</option><option>turco</option><option>azerbaijano</option><option>cazaque</option><option>uzbeque</option></optgroup>
-              <optgroup label="── Oriente Médio ──"><option>árabe</option><option>hebraico</option><option>curdo</option><option>armênio</option><option>georgiano</option></optgroup>
-              <optgroup label="── África ──"><option>swahili</option><option>haussa</option><option>yoruba</option><option>igbo</option><option>amárico</option><option>oromo</option><option>somali</option><option>zulu</option><option>xhosa</option><option>afrikaans</option><option>shona</option><option>sesotho</option><option>lingala</option><option>wolof</option><option>bambara</option></optgroup>
-              <optgroup label="── Oceania ──"><option>maori</option><option>samoano</option><option>tonganês</option><option>fijiano</option><option>havaiano</option><option>tok pisin</option></optgroup>
-              <option>outro</option>
-            </select></label>
+            <label class="field full"><span>Buscar idioma</span><input id="intlLangSearch" type="search" placeholder="Digite o nome do idioma (172 disponíveis)..."></label>
+            <label class="field"><span>Origem</span><select id="sourceLanguageInput"></select></label>
+            <label class="field"><span>Destino</span><select id="targetLanguageInput"></select></label>
             <label class="field"><span>Mercado</span><input id="targetMarketInput" type="text" placeholder="Ex: Estados Unidos, México, Japão"></label>
             <label class="field"><span>Modo</span><select id="adaptationModeInput"><option value="singable">Cantável</option><option value="faithful">Fiel ao sentido</option><option value="rhyme">Com rima</option><option value="emotional">Emocional</option><option value="commercial">Comercial/hit</option></select></label>
           </div>
@@ -1333,15 +1312,15 @@ body::before {
 })();
 </script>
 
+<script src="internacional.js"></script>
 <script src="app.js?v=20260603-secure"></script>
 <script src="cv-engine.js"></script>
 <script src="mascote-caderno-vivo.js"></script>
 <script src="ministerio-cantado.js"></script>
 <script src="estudio-musical.js"></script>
-<script src="cv-router.js?v=3"></script>
-     <script src="cv-buttons.js"></script>
-<script src="internacional.js"></script>
 <script src="cinema.js"></script>
 <script src="carreira.js"></script>
+<script src="cv-router.js?v=3"></script>
+<script src="cv-buttons.js"></script>
 </body>
 </html>

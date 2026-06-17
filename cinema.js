@@ -1,13 +1,17 @@
-(function(){'use strict';var last=null;
-function sanitize(str){var d=document.createElement('div');d.textContent=String(str||'');return d.innerHTML;}
-function getState(){try{return JSON.parse(localStorage.getItem('caderno-vivo-state-v5')||'{}')||{};}catch(e){return {};}}
-function toast(m,t){if(window.CvButtons&&window.CvButtons.toast)window.CvButtons.toast(m,t||'ok');}
-function download(n,c,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c||''],{type:type||'text/plain;charset=utf-8'}));a.download=n;a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},0);}
+/* cinema.js — UI unificada em index.html + app.js; helpers opcionais sem substituir DOM */
+(function () {
+  'use strict';
 
-function injectCSS(){if(document.getElementById('cinema-styles'))return;var s=document.createElement('style');s.id='cinema-styles';s.textContent='.cinema-form,.cinema-storyboard{background:rgba(0,0,0,.3);border:1px solid #4c1d95;border-radius:16px;color:#e2e8f0;padding:18px;margin-bottom:16px}.cinema-form input,.cinema-form textarea{width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);border:1px solid #4c1d95;border-radius:10px;color:#e2e8f0;padding:10px}.cinema-cena{background:rgba(0,0,0,.24);border:1px solid #4c1d95;border-radius:12px;padding:12px;margin-top:10px}.cinema-export-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.cinema-btn{background:#7c3aed;border:0;border-radius:10px;color:#fff;padding:10px 16px;cursor:pointer}.cinema-btn:disabled{opacity:.6;cursor:wait}.cinema-muted{color:#94a3b8;font-size:13px}';document.head.appendChild(s);}
-function renderUI(c){(c.querySelector('.cv-view-body')||c).innerHTML='<section class="cinema-form"><label>Título</label><input id="cin-title"><label>Gênero musical</label><input id="cin-genre" placeholder="gospel, pop, trap..."><label>Estilo visual</label><input id="cin-style" placeholder="cinematográfico, neon, documental..."><label>Sinopse / letra</label><textarea id="cin-syn" rows="7"></textarea><p id="cin-status" class="cinema-muted">Preencha os campos e clique em Gerar roteiro.</p><div class="cinema-export-bar"><button id="cin-go" class="cinema-btn">Gerar roteiro</button><button id="cin-add" class="cinema-btn">Adicionar cena</button><button id="cin-export" class="cinema-btn">Exportar PDF</button></div></section><section class="cinema-storyboard"><div id="cin-result" class="cinema-muted">Preencha os campos e clique em Gerar roteiro</div></section>';}
-function render(c,d){last=d||last;var r=c.querySelector('#cin-result');if(!last){r.textContent='Preencha os campos e clique em Gerar roteiro';return;}var scenes=last.scenes||[];r.innerHTML='<h3>'+sanitize(last.title||'Videoclipe')+'</h3><p><b>Conceito:</b> '+sanitize(last.concept||'')+'</p>'+scenes.map(function(s,i){return '<div class="cinema-cena"><b>Cena '+sanitize(s.id||i+1)+' · '+sanitize(s.time||'')+'</b><p>'+sanitize(s.description||'')+'</p><p><b>Plano:</b> '+sanitize(s.shot||'')+' · <b>Clima:</b> '+sanitize(s.mood||'')+'</p><p><b>Ação:</b> '+sanitize(s.action||'')+'</p></div>';}).join('')+'<p><b>Notas:</b> '+sanitize(last.production_notes||'')+'</p>';}
-function refresh(){var c=document.getElementById('cv-cinema');if(c)render(c,last);}function v(id){return document.getElementById(id).value;}function st(t){document.getElementById('cin-status').textContent=t;}
-function bindEvents(c){if(c.dataset.cinemaBound==='true')return;c.dataset.cinemaBound='true';c.addEventListener('click',async function(e){if(e.target.id==='cin-add'){last=last||{title:v('cin-title')||'Videoclipe',scenes:[]};last.scenes=last.scenes||[];last.scenes.push({id:last.scenes.length+1,description:'Nova cena adicionada manualmente.',shot:'Plano aberto',mood:'A definir',action:'Descreva a ação'});render(c,last);st('Cena adicionada.');}if(e.target.id==='cin-export')download('roteiro-videoclipe.pdf',JSON.stringify(last||{},null,2),'application/pdf');if(e.target.id==='cin-go'){var b=e.target;b.disabled=true;st('Carregando: gerando roteiro...');try{var r=await fetch('/api/cinema',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:v('cin-title'),genre:v('cin-genre'),style:v('cin-style'),synopsis:v('cin-syn')})});var d=await r.json();if(!r.ok)throw new Error(d.error||'Falha');last=d;render(c,d);st('Sucesso: roteiro pronto.');}catch(err){st('Erro amigável: não foi possível gerar o roteiro agora.');document.getElementById('cin-result').textContent='Preencha os campos e clique em Gerar roteiro';}finally{b.disabled=false;}}});}
-function init(){var c=document.getElementById('cv-cinema');if(!c)return;injectCSS();renderUI(c);render(c,last);bindEvents(c);}
-document.addEventListener('cv:navigate',function(e){if(e&&e.detail&&e.detail.to==='cv-cinema')init();});document.addEventListener('cv:state-changed',refresh);document.addEventListener('cv:obra-salva',refresh);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else setTimeout(init,300);window.Cinema={init:init,render:render,refresh:refresh,bindEvents:bindEvents,getState:getState};})();
+  async function generateRoteiro(payload) {
+    var r = await fetch('/api/cinema', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {})
+    });
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Falha ao gerar roteiro');
+    return d;
+  }
+
+  window.Cinema = { generateRoteiro: generateRoteiro };
+})();
